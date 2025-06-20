@@ -6,7 +6,7 @@
     <!-- Feature Bar (Top) -->
     <section class="bg-dark text-white py-2 border-bottom">
         <div class="container d-flex flex-wrap justify-content-center gap-4 small fw-bold">
-            <div><i class="bi bi-hospital me-1 text-warning"></i> 4500+ مركز طبي</div>
+            <div><i class="bi bi-hospital me-1 text-warning"></i> {{ number_format($stats['medical_centers_count']) }}+ مركز طبي</div>
             <div><i class="bi bi-percent me-1 text-warning"></i> خصومات حتى 80%</div>
             <div><i class="bi bi-infinity me-1 text-warning"></i> استخدام غير محدود</div>
             <div><i class="bi bi-lightning-charge me-1 text-warning"></i> تفعيل فوري</div>
@@ -27,7 +27,7 @@
                             <small>خصومات تصل إلى</small>
                         </div>
                         <div class="text-center">
-                            <span class="h2 d-block">4500+</span>
+                            <span class="h2 d-block">{{ number_format($stats['medical_centers_count']) }}+</span>
                             <small>مركز طبي</small>
                         </div>
                         <div class="text-center">
@@ -36,8 +36,8 @@
                         </div>
                     </div>
                     <div class="d-flex gap-3 flex-wrap">
-                        <a href="/frontend/subscribe.blade.php" class="btn btn-warning btn-lg px-4"><i class="bi bi-rocket me-1"></i> اشترك الآن</a>
-                        <a href="/frontend/card-request.blade.php" class="btn btn-outline-light btn-lg px-4"><i class="bi bi-credit-card me-1"></i> اطلب بطاقتك</a>
+                        <a href="{{ route('subscribe') }}" class="btn btn-warning btn-lg px-4"><i class="bi bi-rocket me-1"></i> اشترك الآن</a>
+                        <a href="{{ route('card.request') }}" class="btn btn-outline-light btn-lg px-4"><i class="bi bi-credit-card me-1"></i> اطلب بطاقتك</a>
                     </div>
                 </div>
                 <div class="col-lg-6 text-center">
@@ -80,7 +80,7 @@
                 @endforeach
             </div>
             <div class="text-center mt-5">
-                <a href="/frontend/subscribe.blade.php" class="btn btn-primary btn-lg px-5"><i class="bi bi-rocket me-2"></i> اشترك الآن</a>
+                <a href="{{ route('subscribe') }}" class="btn btn-primary btn-lg px-5"><i class="bi bi-rocket me-2"></i> اشترك الآن</a>
             </div>
         </div>
     </section>
@@ -202,49 +202,51 @@
                 <p class="lead text-muted">استفد من عروضنا الحصرية واحصل على أفضل الخصومات على الخدمات الطبية</p>
             </div>
             <div class="row g-4 justify-content-center">
-                <!-- عروض ثابتة -->
+                @forelse($featuredOffers as $offer)
                 <div class="col-md-6 col-lg-4">
                     <div class="card h-100 border-0 shadow-sm">
-                        <img src="/images/offer1.jpg" alt="عرض خاص 1" class="card-img-top object-fit-cover" style="height: 180px;" />
-                        <div class="card-body p-4">
-                            <h5 class="fw-bold mb-2">خصم 50% على الكشف الطبي</h5>
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="badge bg-success"><i class="bi bi-percent me-1"></i> خصم 50%</span>
-                                <span class="text-muted small"><i class="bi bi-calendar me-1"></i> 2024/06/01 - 2024/06/30</span>
+                        @if($offer->image)
+                            <img src="{{ asset('storage/' . $offer->image) }}" alt="{{ $offer->title }}" class="card-img-top object-fit-cover" style="height: 180px;" />
+                        @else
+                            <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 180px;">
+                                <i class="bi bi-percent text-muted" style="font-size: 3rem;"></i>
                             </div>
-                            <a href="#" class="btn btn-outline-primary w-100">التفاصيل <i class="bi bi-arrow-left ms-2"></i></a>
+                        @endif
+                        <div class="card-body p-4">
+                            <h5 class="fw-bold mb-2">{{ $offer->title }}</h5>
+                            <p class="text-muted small mb-2">{{ Str::limit($offer->description, 80) }}</p>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge bg-success"><i class="bi bi-percent me-1"></i> خصم {{ $offer->discount_percentage }}%</span>
+                                <span class="text-muted small"><i class="bi bi-calendar me-1"></i> {{ $offer->start_date->format('Y/m/d') }} - {{ $offer->end_date->format('Y/m/d') }}</span>
+                            </div>
+                            <div class="mb-2">
+                                <small class="text-muted"><i class="bi bi-hospital me-1"></i> {{ $offer->medicalCenter->name ?? 'غير محدد' }}</small>
+                            </div>
+                            <a href="{{ route('offers.show', $offer->id) }}" class="btn btn-outline-primary w-100">التفاصيل <i class="bi bi-arrow-left ms-2"></i></a>
                         </div>
                     </div>
                 </div>
+                @empty
+                <!-- عروض افتراضية في حالة عدم وجود عروض -->
                 <div class="col-md-6 col-lg-4">
                     <div class="card h-100 border-0 shadow-sm">
-                        <img src="/images/offer2.jpg" alt="عرض خاص 2" class="card-img-top object-fit-cover" style="height: 180px;" />
+                        <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 180px;">
+                            <i class="bi bi-percent text-muted" style="font-size: 3rem;"></i>
+                        </div>
                         <div class="card-body p-4">
-                            <h5 class="fw-bold mb-2">خصم 30% على التحاليل الطبية</h5>
+                            <h5 class="fw-bold mb-2">خصومات حصرية</h5>
+                            <p class="text-muted small mb-2">استفد من خصومات كبيرة على الخدمات الطبية</p>
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="badge bg-success"><i class="bi bi-percent me-1"></i> خصم 30%</span>
-                                <span class="text-muted small"><i class="bi bi-calendar me-1"></i> 2024/06/01 - 2024/06/15</span>
+                                <span class="badge bg-success"><i class="bi bi-percent me-1"></i> خصم حتى 80%</span>
                             </div>
-                            <a href="#" class="btn btn-outline-primary w-100">التفاصيل <i class="bi bi-arrow-left ms-2"></i></a>
+                            <a href="{{ route('offers') }}" class="btn btn-outline-primary w-100">اكتشف العروض <i class="bi bi-arrow-left ms-2"></i></a>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-6 col-lg-4">
-                    <div class="card h-100 border-0 shadow-sm">
-                        <img src="/images/offer3.jpg" alt="عرض خاص 3" class="card-img-top object-fit-cover" style="height: 180px;" />
-                        <div class="card-body p-4">
-                            <h5 class="fw-bold mb-2">خصم 70% على الأشعة</h5>
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="badge bg-success"><i class="bi bi-percent me-1"></i> خصم 70%</span>
-                                <span class="text-muted small"><i class="bi bi-calendar me-1"></i> 2024/06/10 - 2024/06/20</span>
-                            </div>
-                            <a href="#" class="btn btn-outline-primary w-100">التفاصيل <i class="bi bi-arrow-left ms-2"></i></a>
-                        </div>
-                    </div>
-                </div>
+                @endforelse
             </div>
             <div class="text-center mt-5">
-                <a href="#" class="btn btn-outline-primary btn-lg px-5">مشاهدة المزيد من العروض <i class="bi bi-arrow-left ms-2"></i></a>
+                <a href="{{ route('offers') }}" class="btn btn-outline-primary btn-lg px-5">مشاهدة المزيد من العروض <i class="bi bi-arrow-left ms-2"></i></a>
             </div>
         </div>
     </section>
@@ -257,33 +259,66 @@
                 <p class="lead text-muted">اكتشف شبكتنا الواسعة من المراكز الطبية المتميزة في جميع أنحاء المملكة</p>
             </div>
             <div class="row g-4 justify-content-center">
+                @forelse($featuredMedicalCenters->take(3) as $center)
                 <div class="col-md-6 col-lg-4">
                     <div class="card h-100 border-0 shadow-sm">
-                        <img src="/images/center1.jpg" alt="مركز طبي 1" class="card-img-top object-fit-cover" style="height: 180px;" />
+                        @if($center->image)
+                            <img src="{{ asset('storage/' . $center->image) }}" alt="{{ $center->name }}" class="card-img-top object-fit-cover" style="height: 180px;" />
+                        @else
+                            <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 180px;">
+                                <i class="bi bi-hospital text-muted" style="font-size: 3rem;"></i>
+                            </div>
+                        @endif
                         <div class="card-body p-4">
-                            <h5 class="fw-bold mb-2">مركز الشفاء الطبي</h5>
+                            <h5 class="fw-bold mb-2">{{ $center->name }}</h5>
                             <div class="d-flex align-items-center mb-2">
                                 <div class="text-warning me-2">
-                                    <i class="bi bi-star"></i><i class="bi bi-star"></i><i class="bi bi-star"></i><i class="bi bi-star"></i><i class="bi bi-star"></i>
+                                    @for($i = 1; $i <= 5; $i++)
+                                        @if($i <= ($center->rating ?? 4))
+                                            <i class="bi bi-star-fill"></i>
+                                        @else
+                                            <i class="bi bi-star"></i>
+                                        @endif
+                                    @endfor
                                 </div>
-                                <span class="text-muted small">5.0 (100)</span>
+                                <span class="text-muted small">{{ number_format($center->rating ?? 4, 1) }} ({{ $center->reviews_count ?? 0 }})</span>
                             </div>
+                            @if($center->medical_service_types)
                             <div class="mb-2">
-                                <small class="text-muted d-block mb-1">أنواع الخصومات:</small>
-                                <span class="badge bg-success me-1">كشف</span>
-                                <span class="badge bg-success">تحاليل</span>
+                                <small class="text-muted d-block mb-1">التخصصات:</small>
+                                @foreach(array_slice($center->medical_service_types, 0, 2) as $service)
+                                    <span class="badge bg-success me-1">{{ $service }}</span>
+                                @endforeach
+                                @if(count($center->medical_service_types) > 2)
+                                    <span class="badge bg-secondary">+{{ count($center->medical_service_types) - 2 }}</span>
+                                @endif
                             </div>
+                            @endif
                             <div class="d-flex justify-content-between align-items-center">
-                                <span class="text-muted small"><i class="bi bi-geo-alt me-1"></i> الرياض</span>
-                                <a href="#" class="btn btn-outline-primary btn-sm"><i class="bi bi-eye me-1"></i> عرض التفاصيل</a>
+                                <span class="text-muted small"><i class="bi bi-geo-alt me-1"></i> {{ $center->city }}</span>
+                                <a href="{{ route('medical-center.detail', $center->slug) }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-eye me-1"></i> عرض التفاصيل</a>
                             </div>
                         </div>
                     </div>
                 </div>
-                <!-- يمكن تكرار المزيد من المراكز الطبية هنا -->
+                @empty
+                <!-- مركز افتراضي في حالة عدم وجود مراكز -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 180px;">
+                            <i class="bi bi-hospital text-muted" style="font-size: 3rem;"></i>
+                        </div>
+                        <div class="card-body p-4">
+                            <h5 class="fw-bold mb-2">شبكة واسعة من المراكز</h5>
+                            <p class="text-muted small mb-2">اكتشف شبكتنا الواسعة من المراكز الطبية المتميزة</p>
+                            <a href="{{ route('medical-centers.index') }}" class="btn btn-outline-primary w-100">اكتشف المراكز <i class="bi bi-arrow-left ms-2"></i></a>
+                        </div>
+                    </div>
+                </div>
+                @endforelse
             </div>
             <div class="text-center mt-5">
-                <a href="#" class="btn btn-outline-primary btn-lg px-5">مشاهدة جميع المراكز الطبية <i class="bi bi-arrow-left ms-2"></i></a>
+                <a href="{{ route('medical-centers.index') }}" class="btn btn-outline-primary btn-lg px-5">مشاهدة جميع المراكز الطبية <i class="bi bi-arrow-left ms-2"></i></a>
             </div>
         </div>
     </section>
@@ -393,20 +428,20 @@
             <div class="row justify-content-center text-white">
                 <div class="col-md-4 mb-4 mb-md-0">
                     <div class="bg-dark bg-opacity-50 rounded-4 p-4 text-center">
-                        <div class="h1 fw-bold mb-2">+4.2M</div>
-                        <div class="fs-5">مليون عميل</div>
+                        <div class="h1 fw-bold mb-2">{{ number_format($stats['subscribers_count']) }}+</div>
+                        <div class="fs-5">عميل مشترك</div>
                     </div>
                 </div>
                 <div class="col-md-4 mb-4 mb-md-0">
                     <div class="bg-dark bg-opacity-50 rounded-4 p-4 text-center">
-                        <div class="h1 fw-bold mb-2">+3,500</div>
+                        <div class="h1 fw-bold mb-2">{{ number_format($stats['medical_centers_count']) }}+</div>
                         <div class="fs-5">مركز طبي</div>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="bg-dark bg-opacity-50 rounded-4 p-4 text-center">
-                        <div class="h1 fw-bold mb-2">+10.8M</div>
-                        <div class="fs-5">مليون عملية خصم</div>
+                        <div class="h1 fw-bold mb-2">{{ $stats['regions_count'] }}+</div>
+                        <div class="fs-5">منطقة مغطاة</div>
                     </div>
                 </div>
             </div>
@@ -526,8 +561,8 @@
                         <h2 class="display-5 fw-bold mb-4">احصل على بطاقتك الآن واستمتع بخصومات حصرية!</h2>
                         <p class="lead mb-4">انضم إلى الآلاف من المشتركين واستفد من خصومات كبيرة على الخدمات الطبية</p>
                         <div class="d-flex gap-3 justify-content-center flex-wrap">
-                            <a href="/frontend/subscribe.blade.php" class="btn btn-warning btn-lg px-5"><i class="bi bi-rocket me-2"></i> اشترك الآن</a>
-                            <a href="/frontend/card-request.blade.php" class="btn btn-outline-light btn-lg px-5"><i class="bi bi-credit-card me-2"></i> اطلب بطاقتك</a>
+                            <a href="{{ route('subscribe') }}" class="btn btn-warning btn-lg px-5"><i class="bi bi-rocket me-2"></i> اشترك الآن</a>
+                            <a href="{{ route('card.request') }}" class="btn btn-outline-light btn-lg px-5"><i class="bi bi-credit-card me-2"></i> اطلب بطاقتك</a>
                         </div>
                     </div>
                 </div>

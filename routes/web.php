@@ -6,9 +6,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
 // الصفحة الرئيسية
-Route::get('/', function () {
-    return view('home');
-})->name('home');
+Route::get('/', [App\Http\Controllers\HomePageController::class, 'index'])->name('home');
 
 // الصفحات الثابتة
 Route::get('/about', function () { return view('about'); })->name('about');
@@ -264,65 +262,21 @@ Route::get('/city/{slug}', function ($slug) {
 
 // العروض
 Route::get('/offers', function () {
-    // إنشاء عروض وهمية للتوافق مع الصفحة الموجودة
-    $offers = collect([
-        (object)[
-            'id' => 1,
-            'title' => 'خصم 30% على الفحص الشامل',
-            'description' => 'احصل على خصم 30% على الفحص الطبي الشامل في مستشفى الملك فيصل التخصصي',
-            'discount_percentage' => 30,
-            'start_date' => now()->format('Y-m-d'),
-            'end_date' => now()->addMonth()->format('Y-m-d'),
-            'image' => null,
-            'medicalCenter' => (object)[
-                'name' => 'مستشفى الملك فيصل التخصصي',
-                'primaryCity' => (object)['name' => 'الرياض']
-            ]
-        ],
-        (object)[
-            'id' => 2,
-            'title' => 'خصم 25% على خدمات الأسنان',
-            'description' => 'خصم خاص على جميع خدمات طب الأسنان في مجمع عيادات النور الطبي',
-            'discount_percentage' => 25,
-            'start_date' => now()->format('Y-m-d'),
-            'end_date' => now()->addWeeks(2)->format('Y-m-d'),
-            'image' => null,
-            'medicalCenter' => (object)[
-                'name' => 'مجمع عيادات النور الطبي',
-                'primaryCity' => (object)['name' => 'جدة']
-            ]
-        ],
-        (object)[
-            'id' => 3,
-            'title' => 'خصم 20% على الأدوية',
-            'description' => 'خصم على جميع الأدوية والمستلزمات الطبية في صيدلية الشفاء',
-            'discount_percentage' => 20,
-            'start_date' => now()->format('Y-m-d'),
-            'end_date' => null,
-            'image' => null,
-            'medicalCenter' => (object)[
-                'name' => 'صيدلية الشفاء',
-                'primaryCity' => (object)['name' => 'الدمام']
-            ]
-        ]
-    ]);
-
-    // تحويل إلى paginator للتوافق مع الصفحة
-    $offers = new \Illuminate\Pagination\LengthAwarePaginator(
-        $offers,
-        $offers->count(),
-        10,
-        1,
-        ['path' => request()->url()]
-    );
+    $offers = \App\Models\Offer::where('status', 'active')
+        ->where('start_date', '<=', now())
+        ->where('end_date', '>=', now())
+        ->with(['medicalCenter'])
+        ->orderBy('is_featured', 'desc')
+        ->orderBy('created_at', 'desc')
+        ->paginate(12);
 
     return view('offers', compact('offers'));
 })->name('offers');
 
 Route::get('/offers/{id}', function ($id) {
-    $offer = \App\Models\MedicalCenter::where('id', $id)
+    $offer = \App\Models\Offer::where('id', $id)
         ->where('status', 'active')
-        ->where('max_discount', '>', 0)
+        ->with(['medicalCenter'])
         ->firstOrFail();
     return view('offers.show', compact('offer'));
 })->name('offers.show');
