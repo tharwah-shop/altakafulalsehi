@@ -57,7 +57,20 @@ class MedicalCenterController extends Controller
         // الحصول على قوائم للفلاتر
         $regions = MedicalCenter::distinct()->pluck('region')->filter();
         $cities = MedicalCenter::distinct()->pluck('city')->filter();
-        $types = ['hospital', 'clinic', 'pharmacy', 'lab', 'radiology', 'dental', 'optical', 'physiotherapy', 'other'];
+        $types = [
+            1 => 'مستشفى عام',
+            2 => 'عيادة تخصصية',
+            3 => 'مركز طبي',
+            4 => 'مختبر طبي',
+            5 => 'مركز أشعة',
+            6 => 'مجمع أسنان',
+            7 => 'مركز عيون',
+            8 => 'بصريات',
+            9 => 'صيدلية',
+            10 => 'مركز حجامة',
+            11 => 'مركز تجميل',
+            12 => 'مركز ليزر'
+        ];
 
         return view('medical-centers.index', compact('medicalCenters', 'regions', 'cities', 'types'));
     }
@@ -69,7 +82,20 @@ class MedicalCenterController extends Controller
     {
         $regions = MedicalCenter::distinct()->pluck('region')->filter();
         $cities = MedicalCenter::distinct()->pluck('city')->filter();
-        $types = ['hospital', 'clinic', 'pharmacy', 'lab', 'radiology', 'dental', 'optical', 'physiotherapy', 'other'];
+        $types = [
+            1 => 'مستشفى عام',
+            2 => 'عيادة تخصصية',
+            3 => 'مركز طبي',
+            4 => 'مختبر طبي',
+            5 => 'مركز أشعة',
+            6 => 'مجمع أسنان',
+            7 => 'مركز عيون',
+            8 => 'بصريات',
+            9 => 'صيدلية',
+            10 => 'مركز حجامة',
+            11 => 'مركز تجميل',
+            12 => 'مركز ليزر'
+        ];
 
         return view('admin.medical-centers.create', compact('regions', 'cities', 'types'));
     }
@@ -91,7 +117,7 @@ class MedicalCenterController extends Controller
             'phone' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:255',
             'website' => 'nullable|url|max:255',
-            'type' => 'required|in:hospital,clinic,pharmacy,lab,radiology,dental,optical,physiotherapy,other',
+            'type' => 'required|integer|in:1,2,3,4,5,6,7,8,9,10,11,12',
             'medical_service_types' => 'nullable|array',
             'medical_discounts' => 'nullable|array',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
@@ -156,7 +182,20 @@ class MedicalCenterController extends Controller
     {
         $regions = MedicalCenter::distinct()->pluck('region')->filter();
         $cities = MedicalCenter::distinct()->pluck('city')->filter();
-        $types = ['hospital', 'clinic', 'pharmacy', 'lab', 'radiology', 'dental', 'optical', 'physiotherapy', 'other'];
+        $types = [
+            1 => 'مستشفى عام',
+            2 => 'عيادة تخصصية',
+            3 => 'مركز طبي',
+            4 => 'مختبر طبي',
+            5 => 'مركز أشعة',
+            6 => 'مجمع أسنان',
+            7 => 'مركز عيون',
+            8 => 'بصريات',
+            9 => 'صيدلية',
+            10 => 'مركز حجامة',
+            11 => 'مركز تجميل',
+            12 => 'مركز ليزر'
+        ];
 
         return view('admin.medical-centers.edit', compact('medicalCenter', 'regions', 'cities', 'types'));
     }
@@ -178,7 +217,7 @@ class MedicalCenterController extends Controller
             'phone' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:255',
             'website' => 'nullable|url|max:255',
-            'type' => 'required|in:hospital,clinic,pharmacy,lab,radiology,dental,optical,physiotherapy,other',
+            'type' => 'required|integer|in:1,2,3,4,5,6,7,8,9,10,11,12',
             'medical_service_types' => 'nullable|array',
             'medical_discounts' => 'nullable|array',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',

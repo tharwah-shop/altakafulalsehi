@@ -4,18 +4,16 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\MedicalCenter;
-use App\Helpers\ImageHelper;
 use App\Helpers\CitiesHelper;
+use App\Traits\MedicalCenterManagement;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Validator;
-use Maatwebsite\Excel\Facades\Excel;
-use App\Exports\MedicalCentersExport;
-use App\Imports\MedicalCentersImport;
+use Illuminate\Support\Facades\Storage;
 
 class MedicalCenterController extends Controller
 {
+    use MedicalCenterManagement;
     /**
      * Display a listing of the medical centers.
      */
@@ -67,79 +65,18 @@ class MedicalCenterController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'slug' => 'nullable|string|max:255|unique:medical_centers,slug',
-            'description' => 'nullable|string',
-            'city' => 'required|string|max:255',
-            'address' => 'nullable|string',
-            'phone' => 'nullable|string|max:20',
-            'email' => 'nullable|email|max:255',
-            'website' => 'nullable|url|max:255',
-            'type' => 'required|integer|min:1|max:12',
-            'medical_service_types' => 'nullable|array',
-            'medical_service_types.*' => 'string',
-            'discounts' => 'nullable|array',
-            'discounts.*.service' => 'nullable|string|max:255',
-            'discounts.*.discount' => 'nullable|string|max:255',
-            'status' => 'required|in:active,inactive,pending,suspended',
-            'contract_status' => 'nullable|in:active,pending,expired,suspended,terminated',
-            'contract_start_date' => 'nullable|date',
-            'contract_end_date' => 'nullable|date|after_or_equal:contract_start_date',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp,bmp|max:5120',
-        ]);
+        try {
+            $validated = $this->processMedicalCenterCreation($request);
 
-        // إنشاء slug إذا لم يتم توفيره
-        if (empty($validated['slug'])) {
-            $validated['slug'] = Str::slug($validated['name']);
+            MedicalCenter::create($validated);
+
+            $messages = $this->getSuccessMessages();
+            return redirect()->route('admin.medical-centers.index')
+                ->with('success', $messages['created']);
+
+        } catch (\Exception $e) {
+            return $this->handleValidationError($e, $request->all());
         }
-
-        // التحقق من صحة المدينة واستخراج المنطقة
-        if (!CitiesHelper::cityExists($validated['city'])) {
-            return back()->withErrors(['city' => 'المدينة المحددة غير صحيحة'])->withInput();
-        }
-
-        // استخراج المنطقة من المدينة المختارة
-        $regionData = CitiesHelper::getRegionByCity($validated['city']);
-        if ($regionData) {
-            $validated['region'] = $regionData['name'];
-        }
-
-        // معالجة الخصومات
-        if (isset($validated['discounts'])) {
-            $validated['medical_discounts'] = array_filter($validated['discounts'], function($discount) {
-                return !empty($discount['service']) || !empty($discount['discount']);
-            });
-            unset($validated['discounts']);
-        }
-
-        // رفع الصورة
-        if ($request->hasFile('image')) {
-            // التحقق من صحة الصورة
-            $imageErrors = ImageHelper::validateImage($request->file('image'));
-            if (!empty($imageErrors)) {
-                return back()->withErrors(['image' => $imageErrors])->withInput();
-            }
-
-            // رفع وتحسين الصورة
-            $validated['image'] = ImageHelper::uploadAndOptimize(
-                $request->file('image'),
-                'medical-centers',
-                [
-                    'max_width' => 800,
-                    'max_height' => 600,
-                    'quality' => 85
-                ]
-            );
-        }
-
-        // إضافة معرف المستخدم الحالي
-        $validated['created_by'] = auth()->id();
-
-        MedicalCenter::create($validated);
-
-        return redirect()->route('admin.medical-centers.index')
-            ->with('success', 'تم إضافة المركز الطبي بنجاح');
     }
 
     /**
@@ -171,90 +108,18 @@ class MedicalCenterController extends Controller
      */
     public function update(Request $request, MedicalCenter $medicalCenter)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'slug' => 'nullable|string|max:255|unique:medical_centers,slug,' . $medicalCenter->id,
-            'description' => 'nullable|string',
-            'city' => 'required|string|max:255',
-            'address' => 'nullable|string',
-            'phone' => 'nullable|string|max:20',
-            'email' => 'nullable|email|max:255',
-            'website' => 'nullable|url|max:255',
-            'type' => 'required|integer|min:1|max:12',
-            'medical_service_types' => 'nullable|array',
-            'medical_service_types.*' => 'string',
-            'discounts' => 'nullable|array',
-            'discounts.*.service' => 'nullable|string|max:255',
-            'discounts.*.discount' => 'nullable|string|max:255',
-            'status' => 'required|in:active,inactive,pending,suspended',
-            'contract_status' => 'nullable|in:active,pending,expired,suspended,terminated',
-            'contract_start_date' => 'nullable|date',
-            'contract_end_date' => 'nullable|date|after_or_equal:contract_start_date',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp,bmp|max:5120',
-            'remove_current_image' => 'nullable|boolean',
-        ]);
+        try {
+            $validated = $this->processMedicalCenterUpdate($request, $medicalCenter);
 
-        // تحديث slug إذا تغير الاسم أو إذا لم يكن موجوداً
-        if (empty($validated['slug']) || $medicalCenter->name !== $validated['name']) {
-            $validated['slug'] = Str::slug($validated['name']);
+            $medicalCenter->update($validated);
+
+            $messages = $this->getSuccessMessages();
+            return redirect()->route('admin.medical-centers.index')
+                ->with('success', $messages['updated']);
+
+        } catch (\Exception $e) {
+            return $this->handleValidationError($e, $request->all());
         }
-
-        // التحقق من صحة المدينة واستخراج المنطقة
-        if (!CitiesHelper::cityExists($validated['city'])) {
-            return back()->withErrors(['city' => 'المدينة المحددة غير صحيحة'])->withInput();
-        }
-
-        // استخراج المنطقة من المدينة المختارة
-        $regionData = CitiesHelper::getRegionByCity($validated['city']);
-        if ($regionData) {
-            $validated['region'] = $regionData['name'];
-        }
-
-        // معالجة الخصومات
-        if (isset($validated['discounts'])) {
-            $validated['medical_discounts'] = array_filter($validated['discounts'], function($discount) {
-                return !empty($discount['service']) || !empty($discount['discount']);
-            });
-            unset($validated['discounts']);
-        }
-
-        // التعامل مع حذف الصورة الحالية
-        if ($request->input('remove_current_image') == '1') {
-            if ($medicalCenter->image) {
-                ImageHelper::delete($medicalCenter->image);
-                $validated['image'] = null;
-            }
-        }
-
-        // رفع الصورة الجديدة
-        if ($request->hasFile('image')) {
-            // التحقق من صحة الصورة
-            $imageErrors = ImageHelper::validateImage($request->file('image'));
-            if (!empty($imageErrors)) {
-                return back()->withErrors(['image' => $imageErrors])->withInput();
-            }
-
-            // حذف الصورة القديمة إذا كانت موجودة
-            if ($medicalCenter->image) {
-                ImageHelper::delete($medicalCenter->image);
-            }
-
-            // رفع وتحسين الصورة الجديدة
-            $validated['image'] = ImageHelper::uploadAndOptimize(
-                $request->file('image'),
-                'medical-centers',
-                [
-                    'max_width' => 800,
-                    'max_height' => 600,
-                    'quality' => 85
-                ]
-            );
-        }
-
-        $medicalCenter->update($validated);
-
-        return redirect()->route('admin.medical-centers.index')
-            ->with('success', 'تم تحديث المركز الطبي بنجاح');
     }
 
     /**
@@ -262,15 +127,22 @@ class MedicalCenterController extends Controller
      */
     public function destroy(MedicalCenter $medicalCenter)
     {
-        // حذف الصورة
-        if ($medicalCenter->image) {
-            ImageHelper::delete($medicalCenter->image);
+        try {
+            // حذف الصورة
+            if ($medicalCenter->image) {
+                \App\Helpers\ImageHelper::delete($medicalCenter->image);
+            }
+
+            $medicalCenter->delete();
+
+            $messages = $this->getSuccessMessages();
+            return redirect()->route('admin.medical-centers.index')
+                ->with('success', $messages['deleted']);
+
+        } catch (\Exception $e) {
+            return redirect()->route('admin.medical-centers.index')
+                ->with('error', 'حدث خطأ أثناء حذف المركز الطبي: ' . $e->getMessage());
         }
-
-        $medicalCenter->delete();
-
-        return redirect()->route('admin.medical-centers.index')
-            ->with('success', 'تم حذف المركز الطبي بنجاح');
     }
 
     /**
@@ -287,44 +159,159 @@ class MedicalCenterController extends Controller
     }
 
     /**
-     * Export medical centers to Excel
+     * Export medical centers to CSV
      */
-    public function export(Request $request)
+    public function exportCsv(Request $request)
     {
-        $format = $request->get('format', 'xlsx');
-        $filename = 'medical_centers_' . date('Y-m-d_H-i-s') . '.' . $format;
+        $filename = 'medical_centers_' . date('Y-m-d_H-i-s') . '.csv';
 
-        return Excel::download(new MedicalCentersExport, $filename);
+        $medicalCenters = MedicalCenter::with('creator')->get();
+
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+
+        $callback = function() use ($medicalCenters) {
+            $file = fopen('php://output', 'w');
+
+            // Add UTF-8 BOM for proper Arabic display
+            fwrite($file, "\xEF\xBB\xBF");
+
+            // CSV Headers
+            fputcsv($file, [
+                'ID',
+                'اسم المركز',
+                'الرابط المختصر',
+                'الوصف',
+                'المنطقة',
+                'المدينة',
+                'العنوان',
+                'خط الطول',
+                'خط العرض',
+                'الهاتف',
+                'البريد الإلكتروني',
+                'الموقع الإلكتروني',
+                'نوع المركز',
+                'أنواع الخدمات الطبية',
+                'الخصومات الطبية',
+                'الحالة',
+                'حالة العقد',
+                'تاريخ بداية العقد',
+                'تاريخ نهاية العقد',
+                'الصورة',
+                'رابط الموقع',
+                'التقييم',
+                'عدد التقييمات',
+                'عدد المشاهدات',
+                'منشئ بواسطة',
+                'تاريخ الإنشاء',
+                'تاريخ التحديث',
+            ]);
+
+            // Data rows
+            foreach ($medicalCenters as $center) {
+                fputcsv($file, [
+                    $center->id,
+                    $center->name,
+                    $center->slug,
+                    $center->description,
+                    $center->region,
+                    $center->city,
+                    $center->address,
+                    $center->longitude,
+                    $center->latitude,
+                    $center->phone,
+                    $center->email,
+                    $center->website,
+                    $center->type,
+                    is_array($center->medical_service_types) ? implode(', ', $center->medical_service_types) : '',
+                    is_array($center->medical_discounts) ? json_encode($center->medical_discounts, JSON_UNESCAPED_UNICODE) : '',
+                    $center->status,
+                    $center->contract_status,
+                    $center->contract_start_date,
+                    $center->contract_end_date,
+                    $center->image,
+                    $center->location,
+                    $center->rating,
+                    $center->reviews_count,
+                    $center->views_count,
+                    $center->creator ? $center->creator->name : '',
+                    $center->created_at ? $center->created_at->format('Y-m-d H:i:s') : '',
+                    $center->updated_at ? $center->updated_at->format('Y-m-d H:i:s') : '',
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return Response::stream($callback, 200, $headers);
     }
 
     /**
-     * Show import form
+     * Import medical centers from CSV
      */
-    public function importForm()
-    {
-        return view('admin.medical-centers.import');
-    }
-
-    /**
-     * Import medical centers from Excel
-     */
-    public function import(Request $request)
+    public function importCsv(Request $request)
     {
         $request->validate([
-            'file' => 'required|mimes:xlsx,xls,csv|max:10240', // 10MB max
+            'csv_file' => 'required|mimes:csv,txt|max:10240', // 10MB max
         ]);
 
         try {
-            $import = new MedicalCentersImport;
-            Excel::import($import, $request->file('file'));
+            $file = $request->file('csv_file');
+            $path = $file->getRealPath();
 
-            $imported = $import->getImportedCount();
-            $errors = $import->getErrors();
+            $csv = array_map('str_getcsv', file($path));
 
-            if ($errors) {
+            // Remove BOM if present
+            if (!empty($csv[0][0])) {
+                $csv[0][0] = preg_replace('/^\x{FEFF}/u', '', $csv[0][0]);
+            }
+
+            $headers = array_shift($csv); // Remove header row
+
+            $imported = 0;
+            $errors = [];
+
+            foreach ($csv as $index => $row) {
+                $rowNumber = $index + 2; // +2 because we removed header and arrays are 0-indexed
+
+                try {
+                    // Skip empty rows
+                    if (empty(array_filter($row))) {
+                        continue;
+                    }
+
+                    // Map CSV data to array
+                    $data = $this->mapCsvRowToData($headers, $row);
+
+                    // Validate required fields
+                    if (empty($data['name']) || empty($data['region']) || empty($data['city'])) {
+                        $errors[] = "الصف {$rowNumber}: الحقول المطلوبة مفقودة (اسم المركز، المنطقة، المدينة)";
+                        continue;
+                    }
+
+                    // Create or update medical center
+                    $slug = \Illuminate\Support\Str::slug($data['name']);
+                    $data['slug'] = $slug;
+                    $data['created_by'] = auth()->id();
+
+                    MedicalCenter::updateOrCreate(
+                        ['slug' => $slug],
+                        $data
+                    );
+
+                    $imported++;
+
+                } catch (\Exception $e) {
+                    $errors[] = "الصف {$rowNumber}: " . $e->getMessage();
+                }
+            }
+
+            if (!empty($errors)) {
                 return redirect()->back()
-                    ->with('warning', "تم استيراد {$imported} مركز طبي بنجاح، مع وجود {$errors} أخطاء.")
-                    ->with('import_errors', $import->getErrorDetails());
+                    ->with('warning', "تم استيراد {$imported} مركز طبي بنجاح، مع وجود " . count($errors) . " أخطاء.")
+                    ->with('import_errors', $errors);
             }
 
             return redirect()->route('admin.medical-centers.index')
@@ -337,75 +324,191 @@ class MedicalCenterController extends Controller
     }
 
     /**
-     * Download sample import template
+     * Download CSV template
      */
-    public function downloadTemplate()
+    public function downloadCsvTemplate()
     {
-        $filename = 'medical_centers_template.xlsx';
-        $filePath = storage_path('app/templates/' . $filename);
+        $filename = 'medical_centers_template.csv';
 
-        // إنشاء ملف القالب إذا لم يكن موجوداً
-        if (!file_exists($filePath)) {
-            $this->createTemplate($filePath);
-        }
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
 
-        return Response::download($filePath, $filename);
+        $callback = function() {
+            $file = fopen('php://output', 'w');
+
+            // Add UTF-8 BOM for proper Arabic display
+            fwrite($file, "\xEF\xBB\xBF");
+
+            // CSV Headers
+            fputcsv($file, [
+                'اسم المركز',
+                'الوصف',
+                'المنطقة',
+                'المدينة',
+                'العنوان',
+                'خط الطول',
+                'خط العرض',
+                'الهاتف',
+                'البريد الإلكتروني',
+                'الموقع الإلكتروني',
+                'نوع المركز',
+                'أنواع الخدمات الطبية',
+                'الخصومات الطبية',
+                'الحالة',
+                'حالة العقد',
+                'تاريخ بداية العقد',
+                'تاريخ نهاية العقد',
+                'رابط الموقع',
+            ]);
+
+            // Sample data row
+            fputcsv($file, [
+                'مستشفى الملك فهد',
+                'مستشفى متخصص في جميع التخصصات الطبية',
+                'الرياض',
+                'الرياض',
+                'شارع الملك فهد، الرياض',
+                '46.6753',
+                '24.6877',
+                '0112345678',
+                'info@hospital.com',
+                'https://hospital.com',
+                'hospital',
+                'طب عام, جراحة, أطفال',
+                '{"general": 10, "surgery": 15}',
+                'active',
+                'active',
+                '2024-01-01',
+                '2025-01-01',
+                'https://maps.google.com/...',
+            ]);
+
+            fclose($file);
+        };
+
+        return Response::stream($callback, 200, $headers);
     }
 
     /**
-     * Create sample template file
+     * Handle bulk actions
      */
-    private function createTemplate($filePath)
+    public function bulkAction(Request $request)
     {
-        // إنشاء مجلد القوالب إذا لم يكن موجوداً
-        $templateDir = dirname($filePath);
-        if (!is_dir($templateDir)) {
-            mkdir($templateDir, 0755, true);
+        $request->validate([
+            'action' => 'required|in:activate,deactivate,delete',
+            'selected_centers' => 'required|string',
+        ]);
+
+        $centerIds = explode(',', $request->selected_centers);
+        $centerIds = array_filter($centerIds); // Remove empty values
+
+        if (empty($centerIds)) {
+            return redirect()->back()->with('error', 'لم يتم تحديد أي مراكز طبية');
         }
 
-        // إنشاء ملف Excel بسيط مع العناوين
-        $headers = [
-            'name' => 'اسم المركز',
-            'description' => 'الوصف',
-            'region' => 'المنطقة',
-            'city' => 'المدينة',
-            'address' => 'العنوان',
-            'phone' => 'الهاتف',
-            'email' => 'البريد الإلكتروني',
-            'website' => 'الموقع الإلكتروني',
-            'type' => 'نوع المركز (1-12)',
+        $action = $request->action;
+        $count = 0;
 
-            'status' => 'الحالة (active/inactive/pending)',
-            'contract_status' => 'حالة العقد (active/expired/pending)',
-            'contract_start_date' => 'تاريخ بداية العقد (YYYY-MM-DD)',
-            'contract_end_date' => 'تاريخ نهاية العقد (YYYY-MM-DD)',
-        ];
+        try {
+            switch ($action) {
+                case 'activate':
+                    $count = MedicalCenter::whereIn('id', $centerIds)->update(['status' => 'active']);
+                    $message = "تم تفعيل {$count} مركز طبي بنجاح";
+                    break;
 
-        // إنشاء محتوى CSV
-        $csvContent = implode(',', array_values($headers)) . "\n";
+                case 'deactivate':
+                    $count = MedicalCenter::whereIn('id', $centerIds)->update(['status' => 'inactive']);
+                    $message = "تم إيقاف {$count} مركز طبي بنجاح";
+                    break;
 
-        // إضافة صف مثال
-        $exampleRow = [
-            'مستشفى الملك فهد',
-            'مستشفى متخصص في جميع التخصصات الطبية',
-            'الرياض',
-            '1',
-            'شارع الملك فهد، الرياض',
-            '0112345678',
-            'info@hospital.com',
-            'https://hospital.com',
-            '1',
-            'LIC123456',
-            '2025-12-31',
-            '20',
-            'active',
-            'active',
-            '2024-01-01',
-            '2025-12-31'
-        ];
+                case 'delete':
+                    $count = MedicalCenter::whereIn('id', $centerIds)->delete();
+                    $message = "تم حذف {$count} مركز طبي بنجاح";
+                    break;
 
-        $csvContent .= '"' . implode('","', $exampleRow) . '"';
+                default:
+                    return redirect()->back()->with('error', 'إجراء غير صحيح');
+            }
 
-        file_put_contents($filePath, $csvContent);
+            return redirect()->back()->with('success', $message);
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'حدث خطأ أثناء تنفيذ العملية: ' . $e->getMessage());
+        }
     }
+
+    /**
+     * Map CSV row data to medical center data array
+     */
+    private function mapCsvRowToData($headers, $row)
+    {
+        $data = [];
+
+        foreach ($headers as $index => $header) {
+            $value = isset($row[$index]) ? trim($row[$index]) : '';
+
+            switch (trim($header)) {
+                case 'اسم المركز':
+                    $data['name'] = $value;
+                    break;
+                case 'الوصف':
+                    $data['description'] = $value;
+                    break;
+                case 'المنطقة':
+                    $data['region'] = $value;
+                    break;
+                case 'المدينة':
+                    $data['city'] = $value;
+                    break;
+                case 'العنوان':
+                    $data['address'] = $value;
+                    break;
+                case 'خط الطول':
+                    $data['longitude'] = $value ? (float)$value : null;
+                    break;
+                case 'خط العرض':
+                    $data['latitude'] = $value ? (float)$value : null;
+                    break;
+                case 'الهاتف':
+                    $data['phone'] = $value;
+                    break;
+                case 'البريد الإلكتروني':
+                    $data['email'] = $value;
+                    break;
+                case 'الموقع الإلكتروني':
+                    $data['website'] = $value;
+                    break;
+                case 'نوع المركز':
+                    $data['type'] = $value;
+                    break;
+                case 'أنواع الخدمات الطبية':
+                    $data['medical_service_types'] = $value ? explode(', ', $value) : [];
+                    break;
+                case 'الخصومات الطبية':
+                    $data['medical_discounts'] = $value ? json_decode($value, true) : [];
+                    break;
+                case 'الحالة':
+                    $data['status'] = $value ?: 'active';
+                    break;
+                case 'حالة العقد':
+                    $data['contract_status'] = $value;
+                    break;
+                case 'تاريخ بداية العقد':
+                    $data['contract_start_date'] = $value ? date('Y-m-d', strtotime($value)) : null;
+                    break;
+                case 'تاريخ نهاية العقد':
+                    $data['contract_end_date'] = $value ? date('Y-m-d', strtotime($value)) : null;
+                    break;
+                case 'رابط الموقع':
+                    $data['location'] = $value;
+                    break;
+            }
+        }
+
+        return $data;
+    }
+
+
 }

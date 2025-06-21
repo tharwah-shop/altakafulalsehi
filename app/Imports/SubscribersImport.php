@@ -3,14 +3,15 @@
 namespace App\Imports;
 
 use App\Models\Subscriber;
-use App\Models\City;
 use App\Models\Package;
 use App\Models\Dependent;
+use App\Helpers\SaudiCitiesHelper;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Carbon\Carbon;
 
 use Maatwebsite\Excel\Concerns\WithBatchInserts;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
@@ -88,8 +89,9 @@ class SubscribersImport implements ToCollection, WithHeadingRow, WithBatchInsert
             'end_date' => $this->parseDate($row['تاريخ_النهاية'] ?? $row['end_date'] ?? ''),
             'package_name' => trim($row['الباقة'] ?? $row['package'] ?? ''),
             'card_price' => $this->parseDecimal($row['سعر_البطاقة'] ?? $row['card_price'] ?? 0),
-            'total_amount' => $this->parseDecimal($row['المبلغ_الاجمالي'] ?? $row['total_amount'] ?? 0),
             'status' => trim($row['الحالة'] ?? $row['status'] ?? 'فعال'),
+            'created_at' => $this->parseDate($row['تاريخ_الانشاء'] ?? $row['created_at'] ?? ''),
+            'total_amount' => $this->parseDecimal($row['المبلغ_الاجمالي'] ?? $row['total_amount'] ?? 0),
             'discount_percentage' => $this->parseDecimal($row['نسبة_الخصم'] ?? $row['discount_percentage'] ?? 0),
             'discount_amount' => $this->parseDecimal($row['مبلغ_الخصم'] ?? $row['discount_amount'] ?? 0),
             'notes' => trim($row['الملاحظات'] ?? $row['notes'] ?? ''),
@@ -100,6 +102,49 @@ class SubscribersImport implements ToCollection, WithHeadingRow, WithBatchInsert
             'dependents_id_numbers' => trim($row['ارقام_هوية_التابعين'] ?? $row['dependents_id_numbers'] ?? ''),
             'dependents_prices' => trim($row['اسعار_التابعين'] ?? $row['dependents_prices'] ?? ''),
         ];
+    }
+
+    /**
+     * تحديد الباقة المناسبة بناءً على سعر البطاقة
+     */
+    protected function determinePackageByPrice($cardPrice)
+    {
+        // الباقات مرتبة حسب السعر
+        $packagePrices = [
+            149 => 'باقة الطلاب',
+            199 => 'الباقة الأساسية',
+            349 => 'الباقة المميزة',
+            499 => 'الباقة الذهبية',
+            799 => 'باقة العائلة'
+        ];
+
+        // البحث عن أقرب سعر
+        $closestPrice = null;
+        $minDifference = PHP_INT_MAX;
+
+        foreach ($packagePrices as $price => $packageName) {
+            $difference = abs($cardPrice - $price);
+            if ($difference < $minDifference) {
+                $minDifference = $difference;
+                $closestPrice = $price;
+            }
+        }
+
+        return $closestPrice ? $packagePrices[$closestPrice] : 'الباقة الأساسية';
+    }
+
+    /**
+     * اختيار مدينة عشوائية من المدن الرئيسية
+     */
+    protected function getRandomCity()
+    {
+        $majorCities = [
+            'الرياض', 'جدة', 'مكة المكرمة', 'المدينة المنورة', 'الدمام',
+            'الخبر', 'تبوك', 'بريدة', 'خميس مشيط', 'حائل', 'أبها',
+            'الطائف', 'الأحساء', 'ينبع', 'نجران', 'جازان'
+        ];
+
+        return $majorCities[array_rand($majorCities)];
     }
 
     protected function validateRow($data, $rowNumber)
@@ -146,16 +191,36 @@ class SubscribersImport implements ToCollection, WithHeadingRow, WithBatchInsert
 
     protected function createSubscriber($data)
     {
-        // البحث عن المدينة
+        // تحديد المدينة
         $city = null;
         if (!empty($data['city_name'])) {
-            $city = City::where('name', 'like', '%' . $data['city_name'] . '%')->first();
+            // البحث في المدن السعودية
+            $cityData = SaudiCitiesHelper::getCityByName($data['city_name']);
+            if ($cityData) {
+                $city = $cityData['name'];
+            }
         }
 
-        // البحث عن الباقة
+        // إذا لم توجد المدينة، اختر مدينة عشوائية
+        if (!$city) {
+            $city = $this->getRandomCity();
+        }
+
+        // البحث عن الباقة أو تحديدها بناءً على السعر
         $package = null;
         if (!empty($data['package_name'])) {
             $package = Package::where('name', 'like', '%' . $data['package_name'] . '%')->first();
+        }
+
+        // إذا لم توجد الباقة، حدد بناءً على السعر
+        if (!$package && $data['card_price'] > 0) {
+            $packageName = $this->determinePackageByPrice($data['card_price']);
+            $package = Package::where('name', $packageName)->first();
+        }
+
+        // إذا لم توجد باقة، استخدم الباقة الأساسية
+        if (!$package) {
+            $package = Package::where('name', 'الباقة الأساسية')->first();
         }
 
         // توليد رقم البطاقة
@@ -164,23 +229,27 @@ class SubscribersImport implements ToCollection, WithHeadingRow, WithBatchInsert
             $cardNumber = Subscriber::generateCardNumber($data['id_number'], $data['phone']);
         }
 
+        // تحديد المبلغ الإجمالي إذا لم يكن موجوداً
+        $totalAmount = $data['total_amount'] ?: $data['card_price'];
+
         // إنشاء المشترك
         $subscriber = Subscriber::create([
             'name' => $data['name'],
             'phone' => $data['phone'],
             'email' => $data['email'],
-            'city_id' => $city ? $city->id : null,
+            'city' => $city,
             'nationality' => $data['nationality'],
             'id_number' => $data['id_number'],
             'start_date' => $data['start_date'],
             'end_date' => $data['end_date'],
             'card_number' => $cardNumber,
-            'package_id' => $package ? $package->id : null,
+            'package_id' => $package?->id,
             'card_price' => $data['card_price'],
-            'total_amount' => $data['total_amount'],
+            'total_amount' => $totalAmount,
+            'dependents_count' => 0,
             'status' => $data['status'],
-            'discount_percentage' => $data['discount_percentage'],
-            'discount_amount' => $data['discount_amount'],
+            'discount_percentage' => $data['discount_percentage'] ?: 0,
+            'discount_amount' => $data['discount_amount'] ?: 0,
             'notes' => $data['notes'],
             'created_by' => auth()->id(),
         ]);
@@ -193,32 +262,41 @@ class SubscribersImport implements ToCollection, WithHeadingRow, WithBatchInsert
 
     protected function updateSubscriber($subscriber, $data)
     {
-        // البحث عن المدينة
-        $city = null;
+        // تحديد المدينة
+        $city = $subscriber->city;
         if (!empty($data['city_name'])) {
-            $city = City::where('name', 'like', '%' . $data['city_name'] . '%')->first();
+            $cityData = SaudiCitiesHelper::getCityByName($data['city_name']);
+            if ($cityData) {
+                $city = $cityData['name'];
+            }
         }
 
-        // البحث عن الباقة
-        $package = null;
+        // البحث عن الباقة أو تحديدها بناءً على السعر
+        $package = $subscriber->package;
         if (!empty($data['package_name'])) {
             $package = Package::where('name', 'like', '%' . $data['package_name'] . '%')->first();
+        } elseif ($data['card_price'] > 0) {
+            $packageName = $this->determinePackageByPrice($data['card_price']);
+            $package = Package::where('name', $packageName)->first();
         }
+
+        // تحديد المبلغ الإجمالي إذا لم يكن موجوداً
+        $totalAmount = $data['total_amount'] ?: $data['card_price'];
 
         // تحديث بيانات المشترك
         $subscriber->update([
             'name' => $data['name'],
             'email' => $data['email'],
-            'city_id' => $city ? $city->id : $subscriber->city_id,
+            'city' => $city,
             'nationality' => $data['nationality'],
             'start_date' => $data['start_date'],
             'end_date' => $data['end_date'],
-            'package_id' => $package ? $package->id : $subscriber->package_id,
+            'package_id' => $package?->id,
             'card_price' => $data['card_price'],
-            'total_amount' => $data['total_amount'],
+            'total_amount' => $totalAmount,
             'status' => $data['status'],
-            'discount_percentage' => $data['discount_percentage'],
-            'discount_amount' => $data['discount_amount'],
+            'discount_percentage' => $data['discount_percentage'] ?: 0,
+            'discount_amount' => $data['discount_amount'] ?: 0,
             'notes' => $data['notes'] ?: $subscriber->notes,
         ]);
 
@@ -277,9 +355,17 @@ class SubscribersImport implements ToCollection, WithHeadingRow, WithBatchInsert
     protected function parseDate($date)
     {
         if (empty($date)) return null;
-        
+
         try {
-            return \Carbon\Carbon::parse($date)->format('Y-m-d');
+            // التعامل مع التنسيق DD/MM/YYYY
+            if (preg_match('/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/', $date, $matches)) {
+                $day = str_pad($matches[1], 2, '0', STR_PAD_LEFT);
+                $month = str_pad($matches[2], 2, '0', STR_PAD_LEFT);
+                $year = $matches[3];
+                return Carbon::createFromFormat('d/m/Y', "$day/$month/$year")->format('Y-m-d');
+            }
+
+            return Carbon::parse($date)->format('Y-m-d');
         } catch (\Exception $e) {
             return null;
         }

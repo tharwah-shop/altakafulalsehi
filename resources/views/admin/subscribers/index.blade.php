@@ -9,64 +9,144 @@
 @endsection
 
 @section('content')
+<!-- Import Report -->
+@if(session('import_report'))
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-success">
+            <div class="card-header bg-success text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-check-circle me-2"></i>
+                    تقرير استيراد ملف بطاقات التأمين
+                </h5>
+            </div>
+            <div class="card-body">
+                @php $report = session('import_report'); @endphp
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <div class="bg-primary bg-opacity-10 text-primary rounded p-3">
+                            <h4 class="fw-bold mb-1">{{ $report['total_processed'] }}</h4>
+                            <small>إجمالي السجلات المعالجة</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="bg-success bg-opacity-10 text-success rounded p-3">
+                            <h4 class="fw-bold mb-1">{{ $report['imported'] }}</h4>
+                            <small>مشتركين جدد</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="bg-info bg-opacity-10 text-info rounded p-3">
+                            <h4 class="fw-bold mb-1">{{ $report['updated'] }}</h4>
+                            <small>مشتركين محدثين</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="bg-danger bg-opacity-10 text-danger rounded p-3">
+                            <h4 class="fw-bold mb-1">{{ $report['errors'] }}</h4>
+                            <small>أخطاء</small>
+                        </div>
+                    </div>
+                </div>
+
+                @if($report['errors'] > 0 && !empty($report['error_details']))
+                <hr>
+                <div class="alert alert-warning">
+                    <h6><i class="fas fa-exclamation-triangle me-2"></i>تفاصيل الأخطاء:</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>رقم الصف</th>
+                                    <th>الأخطاء</th>
+                                    <th>البيانات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($report['error_details'] as $error)
+                                <tr>
+                                    <td>{{ $error['row'] }}</td>
+                                    <td>
+                                        @foreach($error['errors'] as $err)
+                                            <span class="badge bg-danger me-1">{{ $err }}</span>
+                                        @endforeach
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {{ json_encode($error['data'], JSON_UNESCAPED_UNICODE) }}
+                                        </small>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                @endif
+            </div>
+        </div>
+    </div>
+</div>
+@endif
+
 <!-- Statistics Cards -->
 <div class="row g-4 mb-4">
     <!-- Total Subscribers -->
-    <div class="col-6 col-lg-3">
-        <div class="stats-card slide-in-right">
-            <div class="card-body">
-                <div class="stats-icon bg-primary bg-opacity-10 text-primary">
-                    <i class="fas fa-users"></i>
+    <div class="col-lg-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                    <i class="fas fa-users fa-lg"></i>
                 </div>
-                <h3 class="stats-number">{{ number_format($stats['total'], 0) }}</h3>
-                <p class="stats-label">إجمالي المشتركين</p>
+                <h3 class="fw-bold mb-1">{{ number_format($stats['total'], 0) }}</h3>
+                <p class="text-muted mb-0">إجمالي المشتركين</p>
             </div>
         </div>
     </div>
 
     <!-- Active Subscribers -->
-    <div class="col-6 col-lg-3">
-        <div class="stats-card slide-in-right">
-            <div class="card-body">
-                <div class="stats-icon bg-success bg-opacity-10 text-success">
-                    <i class="fas fa-check-circle"></i>
+    <div class="col-lg-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <div class="bg-success bg-opacity-10 text-success rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                    <i class="fas fa-check-circle fa-lg"></i>
                 </div>
-                <h3 class="stats-number">{{ number_format($stats['active'], 0) }}</h3>
-                <p class="stats-label">المشتركين الفعالين</p>
+                <h3 class="fw-bold mb-1">{{ number_format($stats['active'], 0) }}</h3>
+                <p class="text-muted mb-0">المشتركين الفعالين</p>
             </div>
         </div>
     </div>
 
     <!-- Expired Subscribers -->
-    <div class="col-6 col-lg-3">
-        <div class="stats-card slide-in-right">
-            <div class="card-body">
-                <div class="stats-icon bg-warning bg-opacity-10 text-warning">
-                    <i class="fas fa-clock"></i>
+    <div class="col-lg-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <div class="bg-warning bg-opacity-10 text-warning rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                    <i class="fas fa-clock fa-lg"></i>
                 </div>
-                <h3 class="stats-number">{{ number_format($stats['expired'], 0) }}</h3>
-                <p class="stats-label">منتهي الصلاحية</p>
+                <h3 class="fw-bold mb-1">{{ number_format($stats['expired'], 0) }}</h3>
+                <p class="text-muted mb-0">منتهي الصلاحية</p>
             </div>
         </div>
     </div>
 
     <!-- Cancelled Subscribers -->
-    <div class="col-6 col-lg-3">
-        <div class="stats-card slide-in-right">
-            <div class="card-body">
-                <div class="stats-icon bg-danger bg-opacity-10 text-danger">
-                    <i class="fas fa-times-circle"></i>
+    <div class="col-lg-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <div class="bg-danger bg-opacity-10 text-danger rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                    <i class="fas fa-times-circle fa-lg"></i>
                 </div>
-                <h3 class="stats-number">{{ number_format($stats['cancelled'], 0) }}</h3>
-                <p class="stats-label">ملغي</p>
+                <h3 class="fw-bold mb-1">{{ number_format($stats['cancelled'], 0) }}</h3>
+                <p class="text-muted mb-0">ملغي</p>
             </div>
         </div>
     </div>
 </div>
 
 <!-- Main content -->
-<div class="table-admin fade-in">
-    <div class="card-header">
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-bottom">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
             <div class="d-flex align-items-center">
                 <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-2 me-3">
@@ -74,15 +154,15 @@
                 </div>
                 <div>
                     <h5 class="mb-0">قائمة المشتركين</h5>
-                    <small class="text-muted d-none d-md-block">إدارة وعرض جميع المشتركين في النظام</small>
+                    <small class="text-muted">إدارة وعرض جميع المشتركين في النظام</small>
                 </div>
             </div>
-            <div class="import-export-buttons">
+            <div class="d-flex gap-2 flex-wrap">
                 <!-- Export Dropdown -->
                 <div class="dropdown">
-                    <button type="button" class="btn-admin btn-outline-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                    <button type="button" class="btn btn-outline-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="fas fa-download me-1"></i>
-                        <span class="d-none d-md-inline">تصدير</span>
+                        تصدير
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li><h6 class="dropdown-header">تصدير البيانات</h6></li>
@@ -112,9 +192,9 @@
 
                 <!-- Import Dropdown -->
                 <div class="dropdown">
-                    <button type="button" class="btn-admin btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                    <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="fas fa-upload me-1"></i>
-                        <span class="d-none d-md-inline">استيراد</span>
+                        استيراد
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li><h6 class="dropdown-header">استيراد البيانات</h6></li>
@@ -132,25 +212,25 @@
                 </div>
 
                 <!-- Add Subscriber Button -->
-                <a href="{{ route('admin.subscribers.create') }}" class="btn-admin btn-primary">
+                <a href="{{ route('admin.subscribers.create') }}" class="btn btn-primary">
                     <i class="fas fa-plus me-1"></i>
-                    <span class="d-none d-sm-inline">إضافة مشترك</span>
+                    إضافة مشترك
                 </a>
             </div>
         </div>
     </div>
     <!-- Search and Filters -->
-    <div class="search-filter-form">
+    <div class="card-body border-bottom">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h6 class="mb-0">
                 <i class="fas fa-search me-2"></i>
                 البحث والتصفية
             </h6>
         </div>
-        <form method="GET" class="form-admin">
+        <form method="GET">
             <div class="row g-3">
                 <!-- Search Form -->
-                <div class="col-12 col-md-6 col-lg-4">
+                <div class="col-lg-4">
                     <label class="form-label">
                         <i class="fas fa-search text-primary"></i> البحث
                     </label>
@@ -158,14 +238,14 @@
                         <input type="text" name="search" class="form-control"
                                placeholder="ابحث بالاسم، رقم الجوال، رقم البطاقة..."
                                value="{{ request('search') }}">
-                        <button class="btn-admin btn-outline-primary" type="submit">
+                        <button class="btn btn-outline-primary" type="submit">
                             <i class="fas fa-search"></i>
                         </button>
                     </div>
                 </div>
 
                 <!-- Nationality Filter -->
-                <div class="col-6 col-md-3 col-lg-3">
+                <div class="col-lg-3">
                     <label class="form-label">
                         <i class="fas fa-flag text-primary"></i> الجنسية
                     </label>
@@ -182,12 +262,12 @@
                 </div>
 
                 <!-- Reset Button -->
-                <div class="col-12 col-md-3 col-lg-2">
-                    <label class="form-label d-none d-lg-block">&nbsp;</label>
+                <div class="col-lg-2">
+                    <label class="form-label">&nbsp;</label>
                     @if(request()->hasAny(['search', 'status', 'nationality']))
-                        <a href="{{ route('admin.subscribers.index') }}" class="btn-admin btn-outline-primary w-100">
+                        <a href="{{ route('admin.subscribers.index') }}" class="btn btn-outline-secondary w-100">
                             <i class="fas fa-refresh me-1"></i>
-                            <span class="d-none d-sm-inline">إعادة تعيين</span>
+                            إعادة تعيين
                         </a>
                     @endif
                 </div>
@@ -195,167 +275,104 @@
         </form>
     </div>
 
-    <div class="card-body">
-        <!-- Bulk Actions -->
-        <div class="bulk-actions" id="bulkActions" style="display: none;">
-            <form method="POST" id="bulkForm">
-                @csrf
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="d-flex align-items-center gap-3">
-                        <span class="selected-count">تم تحديد <span id="selectedNumber">0</span> مشترك</span>
-                        <button type="button" class="btn-admin btn-outline-primary" id="deselectAllBtn">
-                            <i class="fas fa-times me-1"></i>
-                            إلغاء التحديد
-                        </button>
-                    </div>
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn-admin btn-primary" id="bulkCardsBtn">
-                            <i class="fas fa-file-pdf me-1"></i>
-                            توليد بطاقات PDF للمحددين
-                        </button>
-                    </div>
-                </div>
-            </form>
-        </div>
-
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <button type="button" id="selectAllBtn" class="btn-admin btn-outline-primary">
-                <i class="fas fa-check-square me-1"></i> تحديد الكل
-            </button>
-        </div>
         <!-- Subscribers Table -->
         <div class="table-responsive">
-            <table class="table">
+            <table class="table table-hover align-middle">
                 <thead>
                     <tr>
-                        <th style="width: 50px;"><input type="checkbox" id="selectAllCheckbox" class="form-check-input"></th>
-                        <th style="width: 60px;" class="d-none d-md-table-cell">#</th>
+                        <th style="width: 60px;">#</th>
                         <th>الاسم</th>
                         <th>رقم الجوال</th>
-                        <th class="d-none d-lg-table-cell">الجنسية</th>
-                        <th class="d-none d-xl-table-cell">رقم البطاقة</th>
-                        <th class="d-none d-lg-table-cell">الباقة</th>
-                        <th class="d-none d-md-table-cell">الحالة</th>
-                        <th class="d-none d-xl-table-cell">تاريخ الإصدار</th>
-                        <th class="d-none d-xl-table-cell">تاريخ الانتهاء</th>
+                        <th>الجنسية</th>
+                        <th>رقم البطاقة</th>
+                        <th>الباقة</th>
+                        <th>الحالة</th>
+                        <th>تاريخ الإصدار</th>
+                        <th>تاريخ الانتهاء</th>
                         <th style="width: 120px;">الإجراءات</th>
                     </tr>
                 </thead>
                             <tbody>
                                 @forelse($subscribers ?? [] as $subscriber)
                                 <tr>
-                                    <td data-label="تحديد">
+                                    <td>
                                         <input type="checkbox" name="subscriber_ids[]" value="{{ $subscriber->id }}" class="form-check-input subscriber-checkbox">
                                     </td>
-                                    <td data-label="#" class="d-none d-md-table-cell">
+                                    <td>
                                         <span class="badge bg-light text-dark">{{ ($subscribers->firstItem() ?? 0) + $loop->index }}</span>
                                     </td>
-                                    <td data-label="الاسم">
+                                    <td>
                                         <div class="d-flex align-items-center gap-2">
-                                            <div class="subscriber-avatar">
+                                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; font-weight: bold;">
                                                 {{ substr($subscriber->name, 0, 1) }}
                                             </div>
-                                            <div class="subscriber-info">
-                                                <div class="subscriber-name">{{ $subscriber->name }}</div>
+                                            <div>
+                                                <div class="fw-semibold">{{ $subscriber->name }}</div>
                                                 @if($subscriber->email)
-                                                    <div class="subscriber-details">{{ $subscriber->email }}</div>
+                                                    <small class="text-muted">{{ $subscriber->email }}</small>
                                                 @endif
-                                                <!-- Mobile-only info -->
-                                                <div class="d-lg-none mt-1">
-                                                    <span class="status-badge status-active me-1">{{ $subscriber->nationality ?? '-' }}</span>
-                                                    @if($subscriber->package)
-                                                        <span class="status-badge status-interested">{{ $subscriber->package->name }}</span>
-                                                    @endif
-                                                </div>
-                                                <!-- Mobile-only status -->
-                                                <div class="d-md-none mt-1">
-                                                    <span class="badge bg-{{ $subscriber->status_color }} small">
-                                                        {{ $subscriber->status }}
-                                                    </span>
-                                                </div>
                                             </div>
                                         </div>
                                     </td>
-                                    <td data-label="رقم الجوال">
+                                    <td>
                                         <span class="text-nowrap">{{ $subscriber->phone }}</span>
-                                        <!-- Mobile-only card number -->
-                                        <div class="d-xl-none">
-                                            <small class="text-muted">{{ $subscriber->card_number }}</small>
-                                        </div>
                                     </td>
-                                    <td data-label="الجنسية" class="d-none d-lg-table-cell">
+                                    <td>
                                         @php
                                             $nat = collect(config('nationalities', []))->firstWhere('name', $subscriber->nationality);
                                         @endphp
-                                        <span class="status-badge status-active">
+                                        <span class="badge bg-light text-dark">
                                             {{ $nat['emoji'] ?? '' }} {{ $subscriber->nationality ?? '-' }}
                                         </span>
                                     </td>
-                                    <td data-label="رقم البطاقة" class="d-none d-xl-table-cell">
+                                    <td>
                                         <code class="small bg-light p-1 rounded">{{ $subscriber->card_number }}</code>
                                     </td>
-                                    <td data-label="الباقة" class="d-none d-lg-table-cell">
+                                    <td>
                                         @if($subscriber->package)
-                                            <span class="status-badge status-interested">{{ $subscriber->package->name }}</span>
+                                            <span class="badge bg-info">{{ $subscriber->package->name }}</span>
                                             <br><small class="text-muted">{{ $subscriber->card_price }} ريال</small>
                                         @else
                                             <span class="text-muted">-</span>
                                         @endif
                                     </td>
-                                    <td data-label="الحالة" class="d-none d-md-table-cell">
+                                    <td>
                                         <span class="badge bg-{{ $subscriber->status_color }}">
                                             {{ $subscriber->status }}
                                         </span>
                                     </td>
-                                    <td data-label="تاريخ الإصدار" class="d-none d-xl-table-cell">
+                                    <td>
                                         @if($subscriber->start_date)
-                                            <span class="badge bg-secondary small">
+                                            <span class="badge bg-secondary">
                                                 {{ \Carbon\Carbon::parse($subscriber->start_date)->format('Y-m-d') }}
                                             </span>
                                         @else
                                             <span class="text-muted">-</span>
                                         @endif
                                     </td>
-                                    <td data-label="تاريخ الانتهاء" class="d-none d-xl-table-cell">
+                                    <td>
                                         @if($subscriber->end_date)
-                                            <span class="badge bg-warning text-dark small">
+                                            <span class="badge bg-warning text-dark">
                                                 {{ \Carbon\Carbon::parse($subscriber->end_date)->format('Y-m-d') }}
                                             </span>
                                         @else
                                             <span class="text-muted">-</span>
                                         @endif
                                     </td>
-                                        <!-- Mobile-only dates -->
-                                        <div class="d-xl-none mt-1">
-                                            @if($subscriber->start_date)
-                                                <small class="text-muted d-block">
-                                                    إصدار: {{ \Carbon\Carbon::parse($subscriber->start_date)->format('Y-m-d') }}
-                                                </small>
-                                            @endif
-                                            @if($subscriber->end_date)
-                                                <small class="text-muted d-block">
-                                                    انتهاء: {{ \Carbon\Carbon::parse($subscriber->end_date)->format('Y-m-d') }}
-                                                </small>
-                                            @endif
-                                        </div>
-                                    </td>
-                                    <td data-label="الإجراءات">
-                                        <div class="action-buttons">
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ route('admin.subscribers.show', $subscriber->id) }}"
+                                               class="btn btn-sm btn-outline-info"
+                                               title="عرض التفاصيل">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
                                             <a href="{{ route('admin.subscribers.edit', $subscriber->id) }}"
-                                               class="action-btn btn-edit"
+                                               class="btn btn-sm btn-outline-primary"
                                                title="تعديل">
                                                 <i class="fas fa-edit"></i>
                                             </a>
-                                            <a href="#"
-                                               onclick="showCardPreview({{ $subscriber->id }})"
-                                               class="action-btn btn-card"
-                                               title="معاينة البطاقة"
-                                               data-bs-toggle="modal"
-                                               data-bs-target="#cardPreviewModal">
-                                                <i class="fas fa-id-card"></i>
-                                            </a>
                                             <button type="button"
-                                                    class="action-btn btn-delete"
+                                                    class="btn btn-sm btn-outline-danger"
                                                     onclick="deleteSubscriber({{ $subscriber->id }})"
                                                     title="حذف">
                                                 <i class="fas fa-trash"></i>
@@ -365,12 +382,12 @@
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="12" class="text-center py-5">
+                                    <td colspan="11" class="text-center py-5">
                                         <div class="text-muted">
                                             <i class="fas fa-users fa-3x mb-3 text-primary opacity-50"></i>
                                             <h5 class="mb-2">لا يوجد مشتركين</h5>
                                             <p class="mb-3">ابدأ بإضافة مشتركين جدد للنظام</p>
-                                            <a href="{{ route('admin.subscribers.create') }}" class="btn-admin btn-primary">
+                                            <a href="{{ route('admin.subscribers.create') }}" class="btn btn-primary">
                                                 <i class="fas fa-plus me-2"></i>
                                                 <span>إضافة مشترك</span>
                                             </a>
@@ -388,60 +405,6 @@
                         </div>
                     @endif
             </div>
-        </div>
-    </div>
-</div>
-
-<!-- Quick Import Modal -->
-<div class="modal fade" id="quickImportModal" tabindex="-1" aria-labelledby="quickImportModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="quickImportModalLabel">
-                    <i class="fas fa-upload me-2"></i>
-                    استيراد سريع
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
-            </div>
-            <form action="{{ route('admin.subscribers.import') }}" method="POST" enctype="multipart/form-data" id="quickImportForm">
-                @csrf
-                <input type="hidden" name="import_type" id="quickImportType" value="subscribers">
-                <div class="modal-body">
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i>
-                        <span id="importTypeText">استيراد المشتركين</span> - للخيارات المتقدمة استخدم الاستيراد المتقدم
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="quickImportFile" class="form-label">اختر ملف الاستيراد</label>
-                        <input type="file" class="form-control" id="quickImportFile" name="import_file"
-                               accept=".xlsx,.xls,.csv" required>
-                        <div class="form-text">الصيغ المدعومة: Excel (.xlsx, .xls) أو CSV (.csv)</div>
-                    </div>
-
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" name="update_existing" id="quickUpdateExisting" value="1">
-                        <label class="form-check-label" for="quickUpdateExisting">
-                            تحديث البيانات الموجودة
-                        </label>
-                    </div>
-
-                    <div id="quickImportProgress" class="progress mt-3" style="display: none;">
-                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%"></div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-                    <a href="#" id="downloadTemplateBtn" class="btn btn-outline-primary me-auto">
-                        <i class="fas fa-download me-1"></i>
-                        تحميل النموذج
-                    </a>
-                    <button type="submit" class="btn btn-primary" id="quickImportSubmit">
-                        <i class="fas fa-upload me-1"></i>
-                        استيراد
-                    </button>
-                </div>
-            </form>
         </div>
     </div>
 </div>
@@ -479,216 +442,62 @@
     </div>
 </div>
 
-<!-- Card Preview Modal -->
-<x-card-preview-modal />
+
 
 @endsection
 
 @push('scripts')
 <script>
-// Select All Functionality
-document.getElementById('selectAllCheckbox').addEventListener('change', function() {
-    const checkboxes = document.querySelectorAll('.subscriber-checkbox');
-    checkboxes.forEach(checkbox => {
-        checkbox.checked = this.checked;
-    });
-    updateSelectedCount();
-});
+    // Quick Import Modal functionality
+    const quickImportModal = document.getElementById('quickImportModal');
+    if (quickImportModal) {
+        quickImportModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const type = button.getAttribute('data-type');
+            const quickImportType = document.getElementById('quickImportType');
+            const importTypeText = document.getElementById('importTypeText');
+            const downloadTemplateBtn = document.getElementById('downloadTemplateBtn');
 
-document.getElementById('selectAllBtn').addEventListener('click', function() {
-    const checkboxes = document.querySelectorAll('.subscriber-checkbox');
-    checkboxes.forEach(checkbox => {
-        checkbox.checked = true;
-    });
-    document.getElementById('selectAllCheckbox').checked = true;
-    updateSelectedCount();
-    toggleBulkButtons();
-});
+            if (type && quickImportType) {
+                quickImportType.value = type;
 
-document.getElementById('deselectAllBtn').addEventListener('click', function() {
-    const checkboxes = document.querySelectorAll('.subscriber-checkbox');
-    checkboxes.forEach(checkbox => {
-        checkbox.checked = false;
-    });
-    document.getElementById('selectAllCheckbox').checked = false;
-    updateSelectedCount();
-    toggleBulkButtons();
-});
+                if (type === 'dependents') {
+                    importTypeText.textContent = 'استيراد التابعين';
+                    downloadTemplateBtn.href = '{{ route("admin.subscribers.download-template", ["type" => "dependents"]) }}';
+                } else {
+                    importTypeText.textContent = 'استيراد المشتركين';
+                    downloadTemplateBtn.href = '{{ route("admin.subscribers.download-template", ["type" => "subscribers"]) }}';
+                }
+            }
+        });
 
-// Individual checkbox change
-document.addEventListener('change', function(e) {
-    if (e.target.classList.contains('subscriber-checkbox')) {
-        updateSelectedCount();
-        toggleBulkButtons();
+        // Handle form submission
+        const quickImportForm = document.getElementById('quickImportForm');
+        if (quickImportForm) {
+            quickImportForm.addEventListener('submit', function() {
+                const submitBtn = document.getElementById('quickImportSubmit');
+                const progressBar = document.getElementById('quickImportProgress');
+
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>جاري الاستيراد...';
+                }
+                if (progressBar) {
+                    progressBar.style.display = 'block';
+                }
+            });
+        }
     }
 });
 
-function updateSelectedCount() {
-    const selectedCheckboxes = document.querySelectorAll('.subscriber-checkbox:checked');
-    const selectedCount = selectedCheckboxes.length;
-    const selectedCountElement = document.getElementById('selectedCount');
-    const selectedNumberElement = document.getElementById('selectedNumber');
-    
-    if (selectedCount > 0) {
-        selectedNumberElement.textContent = selectedCount;
-        selectedCountElement.style.display = 'inline';
-    } else {
-        selectedCountElement.style.display = 'none';
-    }
-}
-
-function toggleBulkButtons() {
-    const selectedCheckboxes = document.querySelectorAll('.subscriber-checkbox:checked');
-    const bulkCardsBtn = document.getElementById('bulkCardsBtn');
-    const selectAllBtn = document.getElementById('selectAllBtn');
-    const deselectAllBtn = document.getElementById('deselectAllBtn');
-    
-    if (selectedCheckboxes.length > 0) {
-        bulkCardsBtn.style.display = 'inline-block';
-        selectAllBtn.style.display = 'none';
-        deselectAllBtn.style.display = 'inline-block';
-    } else {
-        bulkCardsBtn.style.display = 'none';
-        selectAllBtn.style.display = 'inline-block';
-        deselectAllBtn.style.display = 'none';
-    }
-}
-
-// Import functionality
-document.getElementById('importForm').addEventListener('submit', function(e) {
-    const fileInput = document.getElementById('importFile');
-    const progressBar = document.getElementById('importProgress');
-    
-    if (fileInput.files.length === 0) {
-        e.preventDefault();
-        alert('يرجى اختيار ملف للاستيراد');
-        return;
-    }
-    
-    progressBar.style.display = 'block';
-});
-
-// Export functionality
-function exportData(format) {
-    // Show loading state
-    const exportBtn = event.target.closest('a');
-    const originalText = exportBtn.textContent;
-    exportBtn.innerHTML = '<i class="fas fa-download fa-spin mr-2"></i>جاري التصدير...';
-
-    // Simulate export process (replace with actual export logic)
-    setTimeout(() => {
-        // Reset button
-        exportBtn.innerHTML = `<i class="fas fa-file-csv text-info mr-2"></i>تصدير CSV`;
-
-        // Show success message
-        alert(`تم تصدير البيانات بصيغة ${format.toUpperCase()} بنجاح`);
-    }, 2000);
-}
-
-function downloadTemplate() {
-    // Simulate template download
-    alert('سيتم تحميل نموذج CSV');
-}
-
-// Delete subscriber
+// Delete subscriber function
 function deleteSubscriber(subscriberId) {
     const deleteForm = document.getElementById('deleteForm');
-    deleteForm.action = `/admin/subscribers/${subscriberId}`;
-    $('#deleteModal').modal('show');
+    if (deleteForm) {
+        deleteForm.action = `/admin/subscribers/${subscriberId}`;
+        const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+        deleteModal.show();
+    }
 }
-
-// Initialize tooltips
-$(function () {
-    $('[data-toggle="tooltip"]').tooltip();
-});
-
-// Card Preview Functionality
-function showCardPreview(subscriberId) {
-    // إظهار مؤشر التحميل
-    const modalBody = document.querySelector('#cardPreviewModal .modal-body');
-    modalBody.innerHTML = `
-        <div class="text-center p-5">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">جاري التحميل...</span>
-            </div>
-            <p class="mt-2">جاري تحميل بيانات البطاقة...</p>
-        </div>
-    `;
-    
-    // تحميل بيانات البطاقة
-    fetch(`/admin/subscribers/${subscriberId}/card-preview`)
-        .then(response => response.text())
-        .then(html => {
-            // إضافة أزرار التحكم
-            const cardPreviewHtml = `
-                <div class="card-preview-container">
-                    <div class="card-preview-wrapper">
-                        ${html}
-                    </div>
-                    
-                    <div class="card-preview-controls">
-                        <button class="btn btn-flip" onclick="flipCard()">
-                            <i class="fas fa-eye me-2"></i>عرض الوجه الخلفي
-                        </button>
-                        <button class="btn btn-print" onclick="printCard()">
-                            <i class="fas fa-print me-2"></i>طباعة البطاقة
-                        </button>
-                        <a href="/admin/subscribers/${subscriberId}/card-pdf" class="btn btn-download" target="_blank">
-                            <i class="fas fa-download me-2"></i>تحميل PDF
-                        </a>
-                    </div>
-                </div>
-            `;
-            modalBody.innerHTML = cardPreviewHtml;
-        })
-        .catch(error => {
-            console.error('Error loading card preview:', error);
-            modalBody.innerHTML = `
-                <div class="alert alert-danger m-3">
-                    <i class="fas fa-exclamation-circle me-2"></i>
-                    حدث خطأ أثناء تحميل البطاقة
-                    <button class="btn btn-sm btn-outline-danger ms-3" onclick="showCardPreview(${subscriberId})">
-                        <i class="fas fa-redo me-1"></i>
-                        إعادة المحاولة
-                    </button>
-                </div>
-            `;
-        });
-}
-
-// Quick Import Modal functionality
-document.addEventListener('DOMContentLoaded', function() {
-    const quickImportModal = document.getElementById('quickImportModal');
-    const quickImportType = document.getElementById('quickImportType');
-    const importTypeText = document.getElementById('importTypeText');
-    const downloadTemplateBtn = document.getElementById('downloadTemplateBtn');
-    const quickImportForm = document.getElementById('quickImportForm');
-    const quickImportSubmit = document.getElementById('quickImportSubmit');
-
-    // Handle modal show event
-    quickImportModal.addEventListener('show.bs.modal', function(event) {
-        const button = event.relatedTarget;
-        const type = button.getAttribute('data-type');
-
-        if (type) {
-            quickImportType.value = type;
-
-            if (type === 'dependents') {
-                importTypeText.textContent = 'استيراد التابعين';
-                downloadTemplateBtn.href = '{{ route("admin.subscribers.download-template", ["type" => "dependents"]) }}';
-            } else {
-                importTypeText.textContent = 'استيراد المشتركين';
-                downloadTemplateBtn.href = '{{ route("admin.subscribers.download-template", ["type" => "subscribers"]) }}';
-            }
-        }
-    });
-
-    // Handle form submission
-    quickImportForm.addEventListener('submit', function() {
-        quickImportSubmit.disabled = true;
-        quickImportSubmit.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>جاري الاستيراد...';
-        document.getElementById('quickImportProgress').style.display = 'block';
-    });
-});
 </script>
 @endpush

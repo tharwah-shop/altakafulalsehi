@@ -1,18 +1,18 @@
 @extends('admin.layouts.app')
 
-@section('title', 'استيراد المراكز الطبية')
+@section('title', 'استيراد المراكز الطبية من CSV')
 
 @section('content')
 <div class="container-fluid">
     <!-- Page Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h1 class="h3 mb-0 text-gray-800">استيراد المراكز الطبية</h1>
+            <h1 class="h3 mb-0 text-gray-800">استيراد المراكز الطبية من CSV</h1>
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">لوحة التحكم</a></li>
                     <li class="breadcrumb-item"><a href="{{ route('admin.medical-centers.index') }}">المراكز الطبية</a></li>
-                    <li class="breadcrumb-item active">استيراد</li>
+                    <li class="breadcrumb-item active">استيراد CSV</li>
                 </ol>
             </nav>
         </div>
@@ -29,7 +29,7 @@
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
                     <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-upload me-2"></i>استيراد ملف Excel
+                        <i class="fas fa-upload me-2"></i>استيراد ملف CSV
                     </h6>
                 </div>
                 <div class="card-body">
@@ -64,24 +64,21 @@
                         </div>
                     @endif
 
-                    <form action="{{ route('admin.medical-centers.import') }}" method="POST" enctype="multipart/form-data">
+                    <form action="{{ route('admin.medical-centers.import-csv') }}" method="POST" enctype="multipart/form-data">
                         @csrf
-                        
+
                         <div class="mb-4">
-                            <label for="file" class="form-label">اختر ملف Excel</label>
-                            <input type="file" class="form-control" id="file" name="file" accept=".xlsx,.xls,.csv" required>
-                            <div class="form-text">الملفات المدعومة: .xlsx, .xls, .csv (حد أقصى 10 ميجابايت)</div>
+                            <label for="csv_file" class="form-label">اختر ملف CSV</label>
+                            <input type="file" class="form-control" id="csv_file" name="csv_file" accept=".csv,.txt" required>
+                            <div class="form-text">الملفات المدعومة: .csv, .txt (حد أقصى 10 ميجابايت)</div>
                         </div>
 
                         <div class="d-grid gap-2 d-md-flex justify-content-md-start">
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-upload me-2"></i>استيراد البيانات
                             </button>
-                            <a href="{{ route('admin.medical-centers.download-template') }}" class="btn btn-outline-secondary">
-                                <i class="fas fa-download me-2"></i>تحميل قالب Excel
-                            </a>
-                            <a href="{{ asset('storage/templates/medical_centers_instructions.txt') }}" class="btn btn-outline-info" download>
-                                <i class="fas fa-file-text me-2"></i>تحميل التعليمات
+                            <a href="{{ route('admin.medical-centers.download-csv-template') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-download me-2"></i>تحميل قالب CSV
                             </a>
                         </div>
                     </form>
@@ -167,7 +164,7 @@
                     <div class="alert alert-info mt-4">
                         <small>
                             <i class="fas fa-lightbulb me-2"></i>
-                            <strong>نصيحة:</strong> قم بتحميل قالب Excel أولاً لمعرفة التنسيق الصحيح للبيانات.
+                            <strong>نصيحة:</strong> قم بتحميل قالب CSV أولاً لمعرفة التنسيق الصحيح للبيانات.
                         </small>
                     </div>
 
@@ -188,9 +185,9 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // File input validation
-    const fileInput = document.getElementById('file');
+    const fileInput = document.getElementById('csv_file');
     const form = fileInput.closest('form');
-    
+
     fileInput.addEventListener('change', function() {
         const file = this.files[0];
         if (file) {
@@ -200,12 +197,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.value = '';
                 return;
             }
-            
+
             // Check file type
-            const allowedTypes = ['.xlsx', '.xls', '.csv'];
+            const allowedTypes = ['.csv', '.txt'];
             const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
             if (!allowedTypes.includes(fileExtension)) {
-                alert('نوع الملف غير مدعوم. يرجى اختيار ملف Excel أو CSV.');
+                alert('نوع الملف غير مدعوم. يرجى اختيار ملف CSV.');
                 this.value = '';
                 return;
             }

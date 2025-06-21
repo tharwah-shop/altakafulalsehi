@@ -8,6 +8,7 @@ use App\Models\Subscriber;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class PaymentController extends Controller
 {
@@ -16,7 +17,7 @@ class PaymentController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Payment::with(['subscriber.package', 'subscriber.city.region']);
+        $query = Payment::with(['subscriber.package']);
 
         // البحث
         if ($request->filled('search')) {
@@ -81,7 +82,7 @@ class PaymentController extends Controller
      */
     public function show(Payment $payment)
     {
-        $payment->load(['subscriber.package', 'subscriber.city.region', 'subscriber.dependents', 'verifiedBy']);
+        $payment->load(['subscriber.package', 'subscriber.dependents', 'verifiedBy']);
         
         return view('admin.payments.show', compact('payment'));
     }
@@ -134,7 +135,7 @@ class PaymentController extends Controller
             DB::rollback();
 
             // تسجيل تفصيلي للخطأ
-            \Log::error('Payment Verification Error', [
+            Log::error('Payment Verification Error', [
                 'payment_id' => $payment->id,
                 'admin_user_id' => auth()->id(),
                 'error_message' => $e->getMessage(),

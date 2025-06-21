@@ -203,4 +203,28 @@ class MedicalCenter extends Model
     {
         return $this->image ? asset("storage/{$this->image}") : null;
     }
+
+    /**
+     * الحصول على رابط الصورة المصغرة
+     */
+    public function getThumbnailUrlAttribute()
+    {
+        if (!$this->image) {
+            return null;
+        }
+
+        return ImageHelper::getThumbnailUrl($this->image);
+    }
+
+    /**
+     * الحصول على معلومات الصورة
+     */
+    public function getImageInfoAttribute()
+    {
+        if (!$this->image) {
+            return null;
+        }
+
+        return ImageHelper::getImageInfo($this->image);
+    }
 }

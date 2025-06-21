@@ -23,10 +23,11 @@ Route::get('/bank-transfer/{payment}', [App\Http\Controllers\PaymentController::
 Route::post('/payment/bank-transfer/{payment}/confirm', [App\Http\Controllers\PaymentController::class, 'confirmBankTransfer'])->name('payment.bank-transfer.confirm');
 Route::get('/subscription/success/{subscriber}', [App\Http\Controllers\SubscriptionController::class, 'success'])->name('subscription.success');
 Route::get('/subscribe/thankyou', [App\Http\Controllers\SubscriptionController::class, 'thankyou'])->name('subscription.thankyou');
-Route::get('/test-bank-transfer', function () { return view('test-bank-transfer'); });
-Route::get('/test-bank-transfer-form', function () { return view('test-bank-transfer-form'); });
-Route::get('/test-upload-receipt', function () { return view('test-upload-receipt'); });
-Route::get('/test-verify-payment', function () { return view('test-verify-payment'); });
+// مسارات الاختبار - تم إزالتها من بيئة الإنتاج
+// Route::get('/test-bank-transfer', function () { return view('test-bank-transfer'); });
+// Route::get('/test-bank-transfer-form', function () { return view('test-bank-transfer-form'); });
+// Route::get('/test-upload-receipt', function () { return view('test-upload-receipt'); });
+// Route::get('/test-verify-payment', function () { return view('test-verify-payment'); });
 
 // اختبار شامل لتدفق التحويل البنكي
 Route::get('/test-bank-transfer-flow', function () {
@@ -135,32 +136,30 @@ Route::get('/api/cities-by-region', [App\Http\Controllers\SubscriptionController
 Route::get('/card-request', [App\Http\Controllers\CardRequestController::class, 'index'])->name('card.request');
 Route::post('/card-request', [App\Http\Controllers\CardRequestController::class, 'store'])->name('card.request.store');
 
-// اختبار تكامل النظام
-Route::get('/test-system-integration', function () {
-    return response(file_get_contents(base_path('test-system-integration.php')))
-        ->header('Content-Type', 'text/html; charset=utf-8');
-})->name('test.system.integration');
+// مسارات الاختبار - تم إزالتها من بيئة الإنتاج
+// Route::get('/test-system-integration', function () {
+//     return response(file_get_contents(base_path('test-system-integration.php')))
+//         ->header('Content-Type', 'text/html; charset=utf-8');
+// })->name('test.system.integration');
 
-// اختبار تدفق طلب البطاقة
-Route::get('/test-card-request-flow', function () {
-    return response(file_get_contents(base_path('test-card-request-flow.php')))
-        ->header('Content-Type', 'text/html; charset=utf-8');
-})->name('test.card.request.flow');
+// Route::get('/test-card-request-flow', function () {
+//     return response(file_get_contents(base_path('test-card-request-flow.php')))
+//         ->header('Content-Type', 'text/html; charset=utf-8');
+// })->name('test.card.request.flow');
 
 // الشبكة الطبية والمناطق
 Route::get('/medicalnetwork', [App\Http\Controllers\MedicalNetworkController::class, 'index'])->name('medicalnetwork');
 
-// صفحة اختبار الصور (للتطوير فقط)
-Route::get('/test-images', function () {
-    return view('test-images');
-})->name('test-images');
+// مسارات الاختبار - تم إزالتها من بيئة الإنتاج
+// Route::get('/test-images', function () {
+//     return view('test-images');
+// })->name('test-images');
 
-// صفحة اختبار المدن (للتطوير فقط)
-Route::get('/test-cities', function () {
-    $cities = \App\Helpers\CitiesHelper::getAllCities();
-    $regions = \App\Helpers\CitiesHelper::getAllRegions();
-    return view('test-cities', compact('cities', 'regions'));
-})->name('test-cities');
+// Route::get('/test-cities', function () {
+//     $cities = \App\Helpers\CitiesHelper::getAllCities();
+//     $regions = \App\Helpers\CitiesHelper::getAllRegions();
+//     return view('test-cities', compact('cities', 'regions'));
+// })->name('test-cities');
 
 Route::get('/regions', function () {
     $regions = \App\Helpers\CitiesHelper::getAllRegions()->map(function($region) {
@@ -337,29 +336,29 @@ Route::middleware('auth')->group(function () {
 });
 
 // مسارات لوحة التحكم (تتطلب تسجيل دخول)
-Route::prefix('admin')->name('admin.')->group(function () {
+Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () {
 
     // لوحة التحكم الرئيسية
-    Route::get('/', [App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/', [App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard')->middleware('permission:dashboard.view');
 
     // إدارة المراكز الطبية
-    Route::resource('medical-centers', App\Http\Controllers\Admin\MedicalCenterController::class);
-    Route::patch('medical-centers/{medicalCenter}/toggle-status', [App\Http\Controllers\Admin\MedicalCenterController::class, 'toggleStatus'])->name('medical-centers.toggle-status');
+    Route::resource('medical-centers', App\Http\Controllers\Admin\MedicalCenterController::class)->middleware('permission:medical_centers.view');
+    Route::patch('medical-centers/{medicalCenter}/toggle-status', [App\Http\Controllers\Admin\MedicalCenterController::class, 'toggleStatus'])->name('medical-centers.toggle-status')->middleware('permission:medical_centers.edit');
 
-    // استيراد وتصدير المراكز الطبية
-    Route::get('medical-centers-export', [App\Http\Controllers\Admin\MedicalCenterController::class, 'export'])->name('medical-centers.export');
-    Route::get('medical-centers-import', [App\Http\Controllers\Admin\MedicalCenterController::class, 'importForm'])->name('medical-centers.import-form');
-    Route::post('medical-centers-import', [App\Http\Controllers\Admin\MedicalCenterController::class, 'import'])->name('medical-centers.import');
-    Route::get('medical-centers-template', [App\Http\Controllers\Admin\MedicalCenterController::class, 'downloadTemplate'])->name('medical-centers.download-template');
+    // استيراد وتصدير المراكز الطبية (CSV)
+    Route::get('medical-centers-export-csv', [App\Http\Controllers\Admin\MedicalCenterController::class, 'exportCsv'])->name('medical-centers.export-csv');
+    Route::post('medical-centers-import-csv', [App\Http\Controllers\Admin\MedicalCenterController::class, 'importCsv'])->name('medical-centers.import-csv');
+    Route::get('medical-centers-csv-template', [App\Http\Controllers\Admin\MedicalCenterController::class, 'downloadCsvTemplate'])->name('medical-centers.download-csv-template');
+    Route::patch('medical-centers-bulk-action', [App\Http\Controllers\Admin\MedicalCenterController::class, 'bulkAction'])->name('medical-centers.bulk-action');
 
     // إدارة المستخدمين
-    Route::resource('users', App\Http\Controllers\Admin\UserController::class);
+    Route::resource('users', App\Http\Controllers\Admin\UserController::class)->middleware('permission:users.view');
 
     // إدارة الأدوار والصلاحيات
-    Route::resource('roles', App\Http\Controllers\Admin\RoleController::class);
+    Route::resource('roles', App\Http\Controllers\Admin\RoleController::class)->middleware('permission:roles.view');
 
     // إدارة التقييمات
-    Route::resource('reviews', App\Http\Controllers\Admin\ReviewController::class);
+    Route::resource('reviews', App\Http\Controllers\Admin\ReviewController::class)->middleware('permission:reviews.view');
 
 
 
@@ -368,17 +367,21 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::patch('offers/{offer}/toggle-status', [App\Http\Controllers\Admin\OfferController::class, 'toggleStatus'])->name('offers.toggle-status');
 
     // إدارة المشتركين
-    Route::resource('subscribers', App\Http\Controllers\Admin\SubscriberController::class);
-    Route::get('subscribers/{subscriber}/card-preview', [App\Http\Controllers\Admin\SubscriberController::class, 'cardPreview'])->name('subscribers.card-preview');
-    Route::get('subscribers/{subscriber}/card-pdf', [App\Http\Controllers\Admin\SubscriberController::class, 'cardPdf'])->name('subscribers.card-pdf');
-    Route::post('subscribers/bulk-cards', [App\Http\Controllers\Admin\SubscriberController::class, 'bulkCards'])->name('subscribers.bulk-cards');
+    Route::resource('subscribers', App\Http\Controllers\Admin\SubscriberController::class)->middleware('permission:subscribers.view');
+    Route::get('subscribers/{subscriber}/card-preview', [App\Http\Controllers\Admin\SubscriberController::class, 'cardPreview'])->name('subscribers.card-preview')->middleware('permission:subscribers.view');
+    Route::get('subscribers/{subscriber}/card-pdf', [App\Http\Controllers\Admin\SubscriberController::class, 'cardPdf'])->name('subscribers.card-pdf')->middleware('permission:subscribers.view');
+    Route::post('subscribers/bulk-cards', [App\Http\Controllers\Admin\SubscriberController::class, 'bulkCards'])->name('subscribers.bulk-cards')->middleware('permission:subscribers.edit');
 
     // تصدير واستيراد المشتركين
     Route::get('subscribers-export-form', [App\Http\Controllers\Admin\SubscriberController::class, 'exportForm'])->name('subscribers.export.form');
     Route::get('subscribers-export', [App\Http\Controllers\Admin\SubscriberController::class, 'export'])->name('subscribers.export');
     Route::get('subscribers-import-form', [App\Http\Controllers\Admin\SubscriberController::class, 'importForm'])->name('subscribers.import.form');
     Route::post('subscribers-import', [App\Http\Controllers\Admin\SubscriberController::class, 'import'])->name('subscribers.import');
+    Route::post('subscribers-import-custom', [App\Http\Controllers\Admin\SubscriberController::class, 'importCustom'])->name('subscribers.import.custom');
     Route::get('subscribers-download-template', [App\Http\Controllers\Admin\SubscriberController::class, 'downloadTemplate'])->name('subscribers.download-template');
+
+    // مسار الاختبار - تم إزالته من بيئة الإنتاج
+    // Route::get('test-import', function () { return view('test-import'); })->name('test.import');
 
     Route::post('subscribers/generate-card-number', [App\Http\Controllers\Admin\SubscriberController::class, 'generateCardNumber'])->name('subscribers.generate-card-number');
 
@@ -388,11 +391,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::patch('packages/{package}/toggle-featured', [App\Http\Controllers\Admin\PackageController::class, 'toggleFeatured'])->name('packages.toggle-featured');
 
     // إدارة المدفوعات
-    Route::resource('payments', App\Http\Controllers\Admin\PaymentController::class)->only(['index', 'show', 'destroy']);
-    Route::post('payments/{payment}/verify', [App\Http\Controllers\Admin\PaymentController::class, 'verify'])->name('payments.verify');
-    Route::post('payments/{payment}/reject', [App\Http\Controllers\Admin\PaymentController::class, 'reject'])->name('payments.reject');
-    Route::get('payments/{payment}/download-receipt', [App\Http\Controllers\Admin\PaymentController::class, 'downloadReceipt'])->name('payments.download-receipt');
-    Route::get('payments/export', [App\Http\Controllers\Admin\PaymentController::class, 'export'])->name('payments.export');
+    Route::resource('payments', App\Http\Controllers\Admin\PaymentController::class)->only(['index', 'show', 'destroy'])->middleware('permission:payments.view');
+    Route::post('payments/{payment}/verify', [App\Http\Controllers\Admin\PaymentController::class, 'verify'])->name('payments.verify')->middleware('permission:payments.edit');
+    Route::post('payments/{payment}/reject', [App\Http\Controllers\Admin\PaymentController::class, 'reject'])->name('payments.reject')->middleware('permission:payments.edit');
+    Route::get('payments/{payment}/download-receipt', [App\Http\Controllers\Admin\PaymentController::class, 'downloadReceipt'])->name('payments.download-receipt')->middleware('permission:payments.view');
+    Route::get('payments/export', [App\Http\Controllers\Admin\PaymentController::class, 'export'])->name('payments.export')->middleware('permission:payments.view');
 
     // إدارة العملاء المحتملين (للعرض فقط)
     Route::get('potential-customers', [App\Http\Controllers\Admin\PotentialCustomerController::class, 'index'])->name('potential-customers.index');
@@ -404,6 +407,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('potential-customers/download/template', [App\Http\Controllers\Admin\PotentialCustomerController::class, 'downloadTemplate'])->name('potential-customers.download-template');
 });
 
-Auth::routes();
+// تم حذف Auth::routes() المكرر - المسارات معرفة بالفعل في السطر 329
 
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('dashboard');

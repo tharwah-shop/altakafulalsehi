@@ -6,17 +6,31 @@
     <div class="container">
         <div class="row align-items-center">
             <div class="col-md-2 text-center mb-3 mb-md-0">
-                @if($center->image)
-                    <img src="{{ $center->image_url }}" alt="{{ $center->name }}"
-                         class="rounded-circle border border-3 border-white"
-                         style="width: 90px; height: 90px; object-fit: cover;"
-                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                @else
-                    <div class="bg-white rounded-circle d-flex align-items-center justify-content-center border border-3 border-white"
-                         style="width: 90px; height: 90px;">
-                        <i class="bi bi-hospital text-primary fs-2"></i>
-                    </div>
-                @endif
+                <div class="position-relative d-inline-block">
+                    @if($center->image)
+                        <img src="{{ $center->image_url }}" alt="{{ $center->name }}"
+                             class="rounded-circle border border-3 border-white shadow"
+                             style="width: 90px; height: 90px; object-fit: cover;"
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div class="bg-white rounded-circle d-none align-items-center justify-content-center border border-3 border-white shadow"
+                             style="width: 90px; height: 90px; position: absolute; top: 0; left: 50%; transform: translateX(-50%);">
+                            <i class="bi bi-hospital text-primary fs-2"></i>
+                        </div>
+                    @else
+                        <div class="bg-white rounded-circle d-flex align-items-center justify-content-center border border-3 border-white shadow"
+                             style="width: 90px; height: 90px;">
+                            <i class="bi bi-hospital text-primary fs-2"></i>
+                        </div>
+                    @endif
+
+                    <!-- شارة التحقق للمراكز النشطة -->
+                    @if($center->status === 'active')
+                        <div class="position-absolute bottom-0 end-0 bg-success rounded-circle d-flex align-items-center justify-content-center border border-2 border-white"
+                             style="width: 25px; height: 25px;">
+                            <i class="bi bi-check text-white" style="font-size: 12px;"></i>
+                        </div>
+                    @endif
+                </div>
             </div>
             <div class="col-md-7">
                 <h1 class="h3 fw-bold mb-2">{{ $center->name }}</h1>

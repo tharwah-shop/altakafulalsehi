@@ -14,10 +14,11 @@ return new class extends Migration
     {
         // تحديث أسماء المدن في جدول المشتركين
         $this->updateSubscribersCities();
-        
+
         // تحديث أسماء المدن في جدول العملاء المحتملين
-        $this->updatePotentialCustomersCities();
-        
+        // ملاحظة: سيتم تحديث potential_customers في migration منفصل لاحق
+        // $this->updatePotentialCustomersCities();
+
         // تحديث أسماء المدن في جدول المراكز الطبية
         $this->updateMedicalCentersCities();
     }

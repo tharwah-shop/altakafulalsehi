@@ -54,7 +54,7 @@ return [
 
         'stack' => [
             'driver' => 'stack',
-            'channels' => explode(',', env('LOG_STACK', 'single')),
+            'channels' => explode(',', env('LOG_STACK', 'daily,security,performance')),
             'ignore_exceptions' => false,
         ],
 
@@ -69,7 +69,70 @@ return [
             'driver' => 'daily',
             'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
-            'days' => env('LOG_DAILY_DAYS', 14),
+            'days' => env('LOG_DAILY_DAYS', 30),
+            'replace_placeholders' => true,
+        ],
+
+        // قناة الأمان للعمليات الحساسة
+        'security' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/security.log'),
+            'level' => 'info',
+            'days' => 90,
+            'replace_placeholders' => true,
+        ],
+
+        // قناة الأداء لتحليل الاستعلامات
+        'performance' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/performance.log'),
+            'level' => 'info',
+            'days' => 30,
+            'replace_placeholders' => true,
+        ],
+
+        // قناة العمليات التجارية
+        'business' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/business.log'),
+            'level' => 'info',
+            'days' => 60,
+            'replace_placeholders' => true,
+        ],
+
+        // قناة المدفوعات
+        'payments' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/payments.log'),
+            'level' => 'info',
+            'days' => 365,
+            'replace_placeholders' => true,
+        ],
+
+        // قناة الاشتراكات
+        'subscriptions' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/subscriptions.log'),
+            'level' => 'info',
+            'days' => 180,
+            'replace_placeholders' => true,
+        ],
+
+        // قناة المراكز الطبية
+        'medical_centers' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/medical_centers.log'),
+            'level' => 'info',
+            'days' => 90,
+            'replace_placeholders' => true,
+        ],
+
+        // قناة الأخطاء الحرجة
+        'critical' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/critical.log'),
+            'level' => 'error',
+            'days' => 365,
             'replace_placeholders' => true,
         ],
 

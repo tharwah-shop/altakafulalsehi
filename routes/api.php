@@ -109,11 +109,18 @@ Route::get('/stats', function () {
         'regions' => App\Models\MedicalCenter::distinct()->pluck('region')->filter()->values(),
         'cities' => App\Models\MedicalCenter::distinct()->pluck('city')->filter()->values(),
         'medical_center_types' => [
-            'hospital' => App\Models\MedicalCenter::where('type', 'hospital')->where('status', 'active')->count(),
-            'clinic' => App\Models\MedicalCenter::where('type', 'clinic')->where('status', 'active')->count(),
-            'pharmacy' => App\Models\MedicalCenter::where('type', 'pharmacy')->where('status', 'active')->count(),
-            'lab' => App\Models\MedicalCenter::where('type', 'lab')->where('status', 'active')->count(),
-            'other' => App\Models\MedicalCenter::whereIn('type', ['radiology', 'dental', 'optical', 'physiotherapy', 'other'])->where('status', 'active')->count(),
+            'hospital' => App\Models\MedicalCenter::where('type', 1)->where('status', 'active')->count(),
+            'clinic' => App\Models\MedicalCenter::where('type', 2)->where('status', 'active')->count(),
+            'medical_center' => App\Models\MedicalCenter::where('type', 3)->where('status', 'active')->count(),
+            'lab' => App\Models\MedicalCenter::where('type', 4)->where('status', 'active')->count(),
+            'radiology' => App\Models\MedicalCenter::where('type', 5)->where('status', 'active')->count(),
+            'dental' => App\Models\MedicalCenter::where('type', 6)->where('status', 'active')->count(),
+            'eye_center' => App\Models\MedicalCenter::where('type', 7)->where('status', 'active')->count(),
+            'optical' => App\Models\MedicalCenter::where('type', 8)->where('status', 'active')->count(),
+            'pharmacy' => App\Models\MedicalCenter::where('type', 9)->where('status', 'active')->count(),
+            'cupping' => App\Models\MedicalCenter::where('type', 10)->where('status', 'active')->count(),
+            'beauty' => App\Models\MedicalCenter::where('type', 11)->where('status', 'active')->count(),
+            'laser' => App\Models\MedicalCenter::where('type', 12)->where('status', 'active')->count(),
         ],
     ];
 })->name('api.stats');

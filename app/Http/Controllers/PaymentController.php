@@ -7,6 +7,7 @@ use App\Models\Payment;
 use App\Models\Subscriber;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class PaymentController extends Controller
 {
@@ -27,7 +28,7 @@ class PaymentController extends Controller
         if ($payment->notes) {
             preg_match('/Pending Subscription ID: (\d+)/', $payment->notes, $matches);
             if (isset($matches[1])) {
-                $pendingSubscription = \App\Models\PendingSubscription::with(['package', 'city.region'])
+                $pendingSubscription = \App\Models\PendingSubscription::with(['package'])
                     ->where('id', $matches[1])
                     ->where('status', 'pending')
                     ->first();
@@ -69,13 +70,13 @@ class PaymentController extends Controller
         }
 
         // تسجيل حالة البيانات المؤقتة للتشخيص
-        \Log::info('Bank transfer page accessed', [
+        Log::info('Bank transfer page accessed', [
             'payment_id' => $payment->id,
             'payment_amount' => $payment->amount,
             'payment_status' => $payment->status,
             'payment_notes' => $payment->notes,
             'pending_subscription_found' => $pendingSubscription ? 'yes' : 'no',
-            'pending_subscription_id' => $pendingSubscription ? $pendingSubscription->id : null,
+            'pending_subscription_id' => $pendingSubscription?->id,
             'session_pending_id' => session('pending_subscription_id')
         ]);
 
@@ -176,7 +177,7 @@ class PaymentController extends Controller
             DB::rollback();
 
             // تسجيل تفصيلي للخطأ
-            \Log::error('Bank Transfer Confirmation Error', [
+            Log::error('Bank Transfer Confirmation Error', [
                 'payment_id' => $payment->id,
                 'user_id' => auth()->id(),
                 'error_message' => $e->getMessage(),

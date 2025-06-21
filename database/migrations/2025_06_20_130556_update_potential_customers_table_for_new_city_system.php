@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -36,6 +37,9 @@ return new class extends Migration
             $table->index('utm_source');
             $table->index('utm_medium');
         });
+
+        // تحديث أسماء المدن بعد إنشاء العمود
+        $this->updatePotentialCustomersCities();
     }
 
     /**
@@ -63,5 +67,45 @@ return new class extends Migration
             // إعادة إضافة العلاقة مع جدول المدن
             $table->foreignId('city_id')->nullable()->constrained()->onDelete('set null')->after('phone');
         });
+    }
+
+    /**
+     * تحديث أسماء المدن في جدول العملاء المحتملين
+     */
+    private function updatePotentialCustomersCities(): void
+    {
+        $cityMappings = [
+            // المنطقة الوسطى
+            'وسط الرياض' => 'الرياض',
+            'غرب الرياض' => 'الرياض',
+            'شرق الرياض' => 'الرياض',
+            'شمال الرياض' => 'الرياض',
+            'جنوب الرياض' => 'الرياض',
+            'محافظات الرياض' => 'الرياض',
+
+            // المنطقة الغربية
+            'مكة' => 'مكة المكرمة',
+            'المدينة' => 'المدينة المنورة',
+
+            // المنطقة الشرقية
+            'الاحساء' => 'الأحساء',
+            'القطيف' => 'القطيف',
+            'الخفجي' => 'الخفجي',
+
+            // المنطقة الشمالية
+            'الجوف' => 'سكاكا',
+
+            // المنطقة الجنوبية
+            'عسير' => 'أبها',
+            'نجران' => 'نجران',
+            'جيزان' => 'جازان',
+            'الباحة' => 'الباحة',
+        ];
+
+        foreach ($cityMappings as $oldName => $newName) {
+            DB::table('potential_customers')
+                ->where('city', $oldName)
+                ->update(['city' => $newName]);
+        }
     }
 };

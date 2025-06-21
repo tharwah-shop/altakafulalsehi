@@ -14,7 +14,7 @@ class PendingSubscription extends Model
         'name',
         'phone',
         'email',
-        'city_id',
+        'city',
         'nationality',
         'id_number',
         'package_id',
@@ -38,10 +38,11 @@ class PendingSubscription extends Model
     /**
      * العلاقات
      */
-    public function city()
-    {
-        return $this->belongsTo(City::class);
-    }
+    // تم إزالة علاقة المدينة لأن النظام يستخدم الآن نظام المدن القائم على الملفات
+    // public function city()
+    // {
+    //     return $this->belongsTo(City::class);
+    // }
 
     public function package()
     {
@@ -90,7 +91,7 @@ class PendingSubscription extends Model
             'name' => $this->name,
             'phone' => $this->phone,
             'email' => $this->email,
-            'city_id' => $this->city_id,
+            'city' => $this->city,
             'nationality' => $this->nationality,
             'id_number' => $this->id_number,
             'package_id' => $this->package_id,
@@ -123,7 +124,7 @@ class PendingSubscription extends Model
             return $subscriber;
 
         } catch (\Exception $e) {
-            \Log::error('Error converting pending subscription to subscriber', [
+            \Illuminate\Support\Facades\Log::error('Error converting pending subscription to subscriber', [
                 'pending_subscription_id' => $this->id,
                 'error_message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -156,7 +157,7 @@ class PendingSubscription extends Model
             $phoneSuffix = str_pad($phoneSuffix, 3, '0', STR_PAD_LEFT);
         }
 
-        return $idPrefix . $phoneSuffix . $randomNumber;
+        return "{$idPrefix}{$phoneSuffix}{$randomNumber}";
     }
 
     /**
@@ -173,7 +174,7 @@ class PendingSubscription extends Model
             $attempts++;
 
             if ($attempts >= $maxAttempts) {
-                throw new \Exception('فشل في إنشاء رقم بطاقة فريد بعد ' . $maxAttempts . ' محاولات');
+                throw new \Exception("فشل في إنشاء رقم بطاقة فريد بعد {$maxAttempts} محاولات");
             }
         } while ($exists);
 

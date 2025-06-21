@@ -165,7 +165,7 @@ class SubscriberController extends Controller
      */
     public function show(Subscriber $subscriber)
     {
-        $subscriber->load(['package', 'city.region', 'dependents', 'creator', 'payments' => function($query) {
+        $subscriber->load(['package', 'dependents', 'creator', 'payments' => function($query) {
             $query->orderBy('created_at', 'desc');
         }]);
 
@@ -411,6 +411,58 @@ class SubscriberController extends Controller
         } catch (\Exception $e) {
             return redirect()->back()
                 ->with('error', 'حدث خطأ أثناء الاستيراد: ' . $e->getMessage())
+                ->withInput();
+        }
+    }
+
+    /**
+     * استيراد مخصص لملف بطاقات التأمين
+     */
+    public function importCustom(Request $request)
+    {
+        $request->validate([
+            'import_file' => 'required|file|mimes:xlsx,xls,csv|max:10240', // 10MB max
+        ], [
+            'import_file.required' => 'يرجى اختيار ملف للاستيراد',
+            'import_file.mimes' => 'نوع الملف غير مدعوم. يرجى استخدام Excel أو CSV',
+            'import_file.max' => 'حجم الملف كبير جداً. الحد الأقصى 10 ميجابايت',
+        ]);
+
+        try {
+            $import = new \App\Imports\CustomSubscribersImport();
+            Excel::import($import, $request->file('import_file'));
+
+            $imported = $import->getImportedCount();
+            $updated = $import->getUpdatedCount();
+            $errors = $import->getErrorCount();
+
+            $message = "تم استيراد ملف بطاقات التأمين بنجاح! ";
+            $message .= "تم إنشاء {$imported} مشترك جديد";
+            if ($updated > 0) {
+                $message .= " وتحديث {$updated} مشترك موجود";
+            }
+            if ($errors > 0) {
+                $message .= " مع وجود {$errors} أخطاء";
+            }
+
+            $alertType = $errors > 0 ? 'warning' : 'success';
+
+            // إعداد تقرير مفصل
+            $report = [
+                'total_processed' => $imported + $updated + $errors,
+                'imported' => $imported,
+                'updated' => $updated,
+                'errors' => $errors,
+                'error_details' => $import->getErrors()
+            ];
+
+            return redirect()->route('admin.subscribers.index')
+                ->with($alertType, $message)
+                ->with('import_report', $report);
+
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'حدث خطأ أثناء استيراد ملف بطاقات التأمين: ' . $e->getMessage())
                 ->withInput();
         }
     }

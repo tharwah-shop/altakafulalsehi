@@ -89,10 +89,6 @@
                                     <label class="small opacity-75 mb-1">الباقة</label>
                                     <div class="fw-bold">{{ $subscriber->package->name ?? 'غير محدد' }}</div>
                                 </div>
-                                <div class="col-6">
-                                    <label class="small opacity-75 mb-1">المدينة</label>
-                                    <div class="fw-bold">{{ $subscriber->city->name ?? 'غير محدد' }}</div>
-                                </div>
                             </div>
 
                             <!-- Validity -->

@@ -51,13 +51,69 @@
     </div>
     @endif
 
+    <!-- استيراد مخصص لملف بطاقات التأمين -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-id-card me-2"></i>
+                        استيراد ملف بطاقات التأمين
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>استيراد مخصص:</strong> هذا القسم مخصص لاستيراد ملف "بطاقات-التأمين.csv" بالتنسيق المحدد.
+                        سيتم تلقائياً:
+                        <ul class="mb-0 mt-2">
+                            <li>توليد أرقام البطاقات تلقائياً</li>
+                            <li>اختيار مدن عشوائية من المدن السعودية</li>
+                            <li>ربط الباقات بناءً على أسعار البطاقات</li>
+                            <li>تحويل تنسيق التواريخ من DD/MM/YYYY إلى تنسيق قاعدة البيانات</li>
+                        </ul>
+                    </div>
+
+                    <form action="{{ route('admin.subscribers.import.custom') }}" method="POST" enctype="multipart/form-data" id="customImportForm">
+                        @csrf
+
+                        <div class="mb-4">
+                            <label for="custom_import_file" class="form-label">اختر ملف بطاقات التأمين</label>
+                            <input type="file" name="import_file" id="custom_import_file" class="form-control"
+                                   accept=".xlsx,.xls,.csv" required>
+                            @error('import_file')
+                                <div class="text-danger small">{{ $message }}</div>
+                            @enderror
+                            <div class="form-text">
+                                الصيغ المدعومة: Excel (.xlsx, .xls) أو CSV (.csv) - الحد الأقصى: 10 ميجابايت
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <button type="submit" class="btn btn-primary btn-lg" id="customSubmitBtn">
+                                <i class="fas fa-upload me-2"></i>
+                                استيراد ملف بطاقات التأمين
+                            </button>
+                            <div class="text-muted">
+                                <small>
+                                    <i class="fas fa-shield-alt me-1"></i>
+                                    تنسيق مخصص لملف بطاقات التأمين
+                                </small>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row">
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">
                         <i class="fas fa-upload me-2"></i>
-                        استيراد البيانات
+                        استيراد البيانات العادي
                     </h3>
                 </div>
                 <div class="card-body">
@@ -250,7 +306,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('importForm');
     const submitBtn = document.getElementById('submitBtn');
     const originalText = submitBtn.innerHTML;
-    
+
+    // النموذج المخصص
+    const customForm = document.getElementById('customImportForm');
+    const customSubmitBtn = document.getElementById('customSubmitBtn');
+    const customOriginalText = customSubmitBtn.innerHTML;
+
     // معاينة الملف
     fileInput.addEventListener('change', function() {
         const file = this.files[0];
@@ -258,7 +319,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const fileSize = (file.size / 1024 / 1024).toFixed(2);
             const fileName = file.name;
             const fileType = file.type;
-            
+
             fileInfo.innerHTML = `
                 <strong>اسم الملف:</strong> ${fileName}<br>
                 <strong>الحجم:</strong> ${fileSize} ميجابايت<br>
@@ -269,11 +330,17 @@ document.addEventListener('DOMContentLoaded', function() {
             filePreview.style.display = 'none';
         }
     });
-    
-    // معالجة إرسال النموذج
+
+    // معالجة إرسال النموذج العادي
     form.addEventListener('submit', function() {
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>جاري الاستيراد...';
+    });
+
+    // معالجة إرسال النموذج المخصص
+    customForm.addEventListener('submit', function() {
+        customSubmitBtn.disabled = true;
+        customSubmitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>جاري استيراد بطاقات التأمين...';
     });
 });
 </script>

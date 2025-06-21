@@ -7,6 +7,7 @@ use App\Models\Package;
 use App\Models\Subscriber;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 use App\Helpers\SaudiCitiesHelper;
 
 class SubscriptionController extends Controller
@@ -67,7 +68,7 @@ class SubscriptionController extends Controller
      */
     public function store(Request $request)
     {
-        \Log::info('Regular Store Request:', $request->all());
+        Log::info('Regular Store Request:', $request->all());
 
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
@@ -181,8 +182,33 @@ class SubscriptionController extends Controller
 
         } catch (\Exception $e) {
             DB::rollback();
+
+            // تسجيل تفصيلي للخطأ
+            Log::error('Subscription Creation Error', [
+                'user_data' => $request->except(['dependents']),
+                'dependents_count' => $dependentsCount,
+                'package_id' => $request->package_id,
+                'error_message' => $e->getMessage(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            // رسالة خطأ واضحة للمستخدم
+            $errorMessage = 'حدث خطأ أثناء إنشاء الاشتراك. ';
+
+            if (str_contains($e->getMessage(), 'Duplicate entry') || str_contains($e->getMessage(), 'unique')) {
+                $errorMessage .= 'البيانات المدخلة مسجلة مسبقاً. يرجى التحقق من رقم الهوية أو الجوال.';
+            } elseif (str_contains($e->getMessage(), 'card_number')) {
+                $errorMessage .= 'حدث خطأ في توليد رقم البطاقة. يرجى المحاولة مرة أخرى.';
+            } elseif (str_contains($e->getMessage(), 'package')) {
+                $errorMessage .= 'حدث خطأ في بيانات الباقة المحددة. يرجى اختيار باقة أخرى.';
+            } else {
+                $errorMessage .= 'يرجى المحاولة مرة أخرى أو التواصل مع الدعم الفني.';
+            }
+
             return redirect()->back()
-                ->with('error', 'حدث خطأ أثناء إنشاء الاشتراك. يرجى المحاولة مرة أخرى.')
+                ->with('error', $errorMessage)
                 ->withInput();
         }
     }
@@ -309,8 +335,34 @@ class SubscriptionController extends Controller
 
         } catch (\Exception $e) {
             DB::rollback();
+
+            // تسجيل تفصيلي للخطأ
+            Log::error('Bank Transfer Subscription Error', [
+                'user_data' => $request->except(['dependents']),
+                'dependents_count' => $dependentsCount,
+                'package_id' => $request->package_id,
+                'total_price' => $totalPrice ?? 0,
+                'error_message' => $e->getMessage(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            // رسالة خطأ واضحة للمستخدم
+            $errorMessage = 'حدث خطأ أثناء حفظ البيانات. ';
+
+            if (str_contains($e->getMessage(), 'Duplicate entry') || str_contains($e->getMessage(), 'unique')) {
+                $errorMessage .= 'البيانات المدخلة مسجلة مسبقاً. يرجى التحقق من رقم الهوية أو الجوال.';
+            } elseif (str_contains($e->getMessage(), 'payment')) {
+                $errorMessage .= 'حدث خطأ في إنشاء سجل الدفع. يرجى المحاولة مرة أخرى.';
+            } elseif (str_contains($e->getMessage(), 'package')) {
+                $errorMessage .= 'حدث خطأ في بيانات الباقة المحددة. يرجى اختيار باقة أخرى.';
+            } else {
+                $errorMessage .= 'يرجى المحاولة مرة أخرى أو التواصل مع الدعم الفني.';
+            }
+
             return redirect()->back()
-                ->with('error', 'حدث خطأ أثناء حفظ البيانات. يرجى المحاولة مرة أخرى.')
+                ->with('error', $errorMessage)
                 ->withInput();
         }
     }
